@@ -1,0 +1,69 @@
+{
+  "kind": "collectionType",
+  "collectionName": "registrations",
+  "info": {
+    "singularName": "registration",
+    "pluralName": "registrations",
+    "displayName": "Registration"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "fullName": {
+      "type": "string",
+      "required": true
+    },
+    "email": {
+      "type": "email",
+      "required": true,
+      "unique": false
+    },
+    "phone": {
+      "type": "biginteger",
+      "unique": false
+    },
+    "Institution": {
+      "type": "string"
+    },
+    "rollNumber": {
+      "type": "string",
+      "unique": false
+    },
+    "notes": {
+      "type": "text"
+    },
+    "status_registration": {
+      "type": "enumeration",
+      "default": "pending",
+      "enum": [
+        "pending",
+        "confirmed",
+        "cancelled"
+      ]
+    },
+    "event": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::event.event",
+      "inversedBy": "registrations"
+    },
+    "venue": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::venue.venue",
+      "inversedBy": "registrations"
+    },
+    "payment": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    }
+  }
+}
