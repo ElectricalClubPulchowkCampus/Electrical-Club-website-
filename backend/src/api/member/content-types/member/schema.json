@@ -1,0 +1,86 @@
+{
+  "kind": "collectionType",
+  "collectionName": "members",
+  "info": {
+    "singularName": "member",
+    "pluralName": "members",
+    "displayName": "Committee Member"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "phone_number": {
+      "type": "biginteger",
+      "required": true,
+      "default": "980000000"
+    },
+    "profile_pic": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "quote": {
+      "type": "text"
+    },
+    "role": {
+      "type": "string"
+    },
+    "rollNumber": {
+      "type": "string"
+    },
+    "email": {
+      "type": "email"
+    },
+    "order": {
+      "type": "integer",
+      "required": true
+    },
+    "socialLinks": {
+      "type": "component",
+      "component": "shared.social-link",
+      "repeatable": true
+    },
+    "team": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::team.team",
+      "inversedBy": "committee_members"
+    },
+    "about": {
+      "type": "text"
+    },
+    "primaryFocus": {
+      "type": "string"
+    },
+    "clubContribution": {
+      "type": "text"
+    },
+    "projects": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::project.project",
+      "mappedBy": "members"
+    },
+    "led_projects": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::project.project",
+      "mappedBy": "leader"
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name"
+    }
+  }
+}
