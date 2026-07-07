@@ -477,6 +477,37 @@ export interface ApiClubSettingClubSetting extends Struct.SingleTypeSchema {
   };
 }
 
+export interface ApiContactMessageContactMessage
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'contact_messages';
+  info: {
+    displayName: 'contact-message';
+    pluralName: 'contact-messages';
+    singularName: 'contact-message';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    email: Schema.Attribute.Email;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::contact-message.contact-message'
+    > &
+      Schema.Attribute.Private;
+    message: Schema.Attribute.Text;
+    name: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiEventEvent extends Struct.CollectionTypeSchema {
   collectionName: 'events';
   info: {
@@ -687,6 +718,35 @@ export interface ApiSettingSetting extends Struct.SingleTypeSchema {
       Schema.Attribute.Private;
     paymentQr: Schema.Attribute.Media<'images', true>;
     paymentQrCaption: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiSuggestionSuggestion extends Struct.CollectionTypeSchema {
+  collectionName: 'suggestions';
+  info: {
+    displayName: 'suggestion';
+    pluralName: 'suggestions';
+    singularName: 'suggestion';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::suggestion.suggestion'
+    > &
+      Schema.Attribute.Private;
+    message: Schema.Attribute.Text;
+    name: Schema.Attribute.String & Schema.Attribute.DefaultTo<'anonymous'>;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -1273,11 +1333,13 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::club-setting.club-setting': ApiClubSettingClubSetting;
+      'api::contact-message.contact-message': ApiContactMessageContactMessage;
       'api::event.event': ApiEventEvent;
       'api::member.member': ApiMemberMember;
       'api::project.project': ApiProjectProject;
       'api::registration.registration': ApiRegistrationRegistration;
       'api::setting.setting': ApiSettingSetting;
+      'api::suggestion.suggestion': ApiSuggestionSuggestion;
       'api::team.team': ApiTeamTeam;
       'api::venue.venue': ApiVenueVenue;
       'plugin::content-releases.release': PluginContentReleasesRelease;

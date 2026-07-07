@@ -21,7 +21,7 @@ services:
   strapi:
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     restart: unless-stopped
     env_file: ./backend/.env
     depends_on:
@@ -37,7 +37,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     env_file: ./frontend/.env
     depends_on:
       - strapi
