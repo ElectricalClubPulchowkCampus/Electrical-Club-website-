@@ -440,6 +440,43 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiClubSettingClubSetting extends Struct.SingleTypeSchema {
+  collectionName: 'club_settings';
+  info: {
+    displayName: 'club-setting';
+    pluralName: 'club-settings';
+    singularName: 'club-setting';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    about: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    Electrical_club_socials: Schema.Attribute.Component<
+      'shared.social-link',
+      true
+    >;
+    faqs: Schema.Attribute.Component<'shared.faqs', true>;
+    hero_title: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::club-setting.club-setting'
+    > &
+      Schema.Attribute.Private;
+    mission: Schema.Attribute.String;
+    phoneNum: Schema.Attribute.Integer;
+    pillars: Schema.Attribute.Component<'shared.club-pillars', true>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiEventEvent extends Struct.CollectionTypeSchema {
   collectionName: 'events';
   info: {
@@ -631,7 +668,7 @@ export interface ApiRegistrationRegistration
 export interface ApiSettingSetting extends Struct.SingleTypeSchema {
   collectionName: 'settings';
   info: {
-    displayName: 'setting';
+    displayName: 'payment-setting';
     pluralName: 'settings';
     singularName: 'setting';
   };
@@ -1235,6 +1272,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::club-setting.club-setting': ApiClubSettingClubSetting;
       'api::event.event': ApiEventEvent;
       'api::member.member': ApiMemberMember;
       'api::project.project': ApiProjectProject;

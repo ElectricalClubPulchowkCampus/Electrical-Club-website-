@@ -33,14 +33,39 @@ export const MemberService = {
     })
     
     const members = response.data as Member[]
+    
     return members
   },
+async getFeaturedMembers() {
+  const response = await membersCollection.find({
+    filters: {
+      team: {
+        name: {
+          $eq: 'Core', // swap to whatever field/value actually matches
+        },
+      },
+      role: {
+        $in: TOP_POSITIONS,
+      },
+    },
+    sort: ['order:asc'],
+    populate: {
+      profile_pic: true,
+      team: true,
+    },
+    
+  })
+
+  const members = response.data as Member[]
+  return members
+},
   async getMemberById(id: string) {
   const response = await membersCollection.findOne(id, {
     populate: {
       profile_pic: true,
       team: true,
       socialLinks: true,
+      sort: ['order:asc'],
       projects: {
         populate: {
           cover_img: true,
@@ -75,23 +100,23 @@ export const MemberService = {
         populate: {
           cover_img: true,
           leader: true,
-          members: true
+          members: true,
         },
       },
       led_projects: {
         populate: {
           cover_img: true,
           leader: true,
-          members: true
+          members: true,
         },
       },
     },
-  });
+  })
 
   const members = response.data as Member[]
   if (!members.length) {
     throw new Error('Member not found')
   }
-  return members[0]
+  return members[0] as Member
 }
 }

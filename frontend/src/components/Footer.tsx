@@ -1,24 +1,49 @@
 import { Link } from '@tanstack/react-router'
+import {
+  FaGithub,
+  FaTwitter,
+  FaLinkedin,
+  FaGlobe,
+  FaFacebook,
+  FaInstagram,
+  FaYoutube,
+  FaTiktok,
+} from 'react-icons/fa6'
+import type { IconType } from 'react-icons'
+import type { SocialLink } from '../types/clubSetting'
 
 const footerLinks = [
   {
     title: 'Navigation',
     links: [
       { to: '/', label: 'Home' },
-      { to: '/Members', label: 'Members' },
-      { to: '/Events', label: 'Events' },
-    ],
-  },
-  {
-    title: 'Explore',
-    links: [
-      { to: '/Gallery', label: 'Gallery' },
-      { to: '/Blog', label: 'Blog' },
+      { to: '/members', label: 'Members' },
+      { to: '/events', label: 'Events' },
     ],
   },
 ] as const
 
-export function Footer() {
+const platformIcons: Record<string, IconType> = {
+  github: FaGithub,
+  twitter: FaTwitter,
+  x: FaTwitter,
+  linkedin: FaLinkedin,
+  website: FaGlobe,
+  facebook: FaFacebook,
+  instagram: FaInstagram,
+  youtube: FaYoutube,
+  tiktok: FaTiktok,
+}
+
+function getPlatformIcon(platform: string) {
+  return platformIcons[platform.toLowerCase()] ?? FaGlobe
+}
+
+interface FooterProps {
+  socials?: SocialLink[]
+}
+
+export function Footer({ socials = [] }: FooterProps) {
   const currentYear = new Date().getFullYear()
 
   return (
@@ -26,7 +51,6 @@ export function Footer() {
       <div className="mx-auto max-w-[1126px] px-6 py-10 md:py-16">
         {/* Top Section */}
         <div className="flex flex-col gap-10 md:flex-row md:justify-between md:gap-6">
-
           {/* Brand/Logo Column */}
           <div className="flex flex-col items-start gap-3 max-w-xs">
             <Link to="/" className="flex items-center gap-3 no-underline">
@@ -60,7 +84,7 @@ export function Footer() {
                   {group.links.map((link) => (
                     <li key={link.to}>
                       <Link
-                        to={link.to as any}
+                        to={link.to}
                         className="text-[14px] font-medium text-[var(--text)] no-underline transition-colors hover:text-[var(--accent)]"
                       >
                         {link.label}
@@ -70,6 +94,33 @@ export function Footer() {
                 </ul>
               </div>
             ))}
+
+            {/* Connect / Socials Column */}
+            {socials.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <h3 className="m-0 text-[14px] font-bold uppercase tracking-wider text-[var(--text-h)]">
+                  Connect
+                </h3>
+                <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                  {socials.map((social) => {
+                    const Icon = getPlatformIcon(social.platform)
+                    return (
+                      <li key={social.id}>
+                        <a
+                          href={social.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2 text-[14px] font-medium text-[var(--text)] no-underline capitalize transition-colors hover:text-[var(--accent)]"
+                        >
+                          <Icon size={15} />
+                          {social.platform}
+                        </a>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
 
@@ -81,13 +132,6 @@ export function Footer() {
           <p className="m-0 text-[13px] text-[var(--text)] opacity-70">
             &copy; {currentYear} Electrical Club, Pulchowk Campus. All rights reserved.
           </p>
-
-          {/* Optional Social / Utility Links */}
-          <div className="flex gap-4 text-[13px] text-[var(--text)] opacity-70">
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="no-underline hover:text-[var(--accent)]">GitHub</a>
-            <span>&middot;</span>
-            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="no-underline hover:text-[var(--accent)]">Facebook</a>
-          </div>
         </div>
       </div>
     </footer>

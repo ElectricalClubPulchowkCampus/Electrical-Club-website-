@@ -59,7 +59,8 @@ export const UploadService = {
     if (!uploaded?.url || uploaded?.id == null) {
       throw new Error('Upload succeeded but no file id/URL was returned.')
     }
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string 
 
-    return { id: uploaded.id, url: `${STRAPI_URL}${uploaded.url}` }
+    return { id: uploaded.id, url: `${BACKEND_URL}${uploaded.url}` }
   },
 }

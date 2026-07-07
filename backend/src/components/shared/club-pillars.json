@@ -1,0 +1,16 @@
+{
+  "collectionName": "components_shared_club_pillars",
+  "info": {
+    "displayName": "club_pillars"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    }
+  },
+  "config": {}
+}

@@ -9,6 +9,7 @@ export const EventsService = {
         venue: true,
         organizer: true,
       },
+      sort: ['order:asc'],
     })
 
     return response.data as Event[]
@@ -21,6 +22,7 @@ export const EventsService = {
         venue: true,
         organizer: true,
       },
+      sort: ['order:asc'],
     })
 
     return response.data as Event
