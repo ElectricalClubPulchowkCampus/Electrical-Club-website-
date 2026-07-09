@@ -7,13 +7,7 @@ interface EventCardProps {
 }
 
 const EventCard = ({ event, isPast = false }: EventCardProps) => {
-  const baseUrl = import.meta.env.VITE_BACKEND_URL;
 
-  const imageUrl = event?.coverImage?.formats?.large?.url
-    ? `${baseUrl}${event.coverImage.formats.large.url}`
-    : event?.coverImage?.url
-      ? `${baseUrl}${event.coverImage.url}`
-      : "/default-event.png";
 
   return (
     <div className="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -24,7 +18,7 @@ const EventCard = ({ event, isPast = false }: EventCardProps) => {
         className="relative block h-48 w-full overflow-hidden"
       >
         <img
-          src={imageUrl}
+          src={event.coverImage?.formats?.small?.url}
           alt={event.title || "Event image"}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
         />

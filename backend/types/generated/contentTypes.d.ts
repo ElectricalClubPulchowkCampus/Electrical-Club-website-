@@ -590,9 +590,7 @@ export interface ApiMemberMember extends Struct.CollectionTypeSchema {
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'980000000'>;
     primaryFocus: Schema.Attribute.String;
-    profile_pic: Schema.Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios'
-    >;
+    profile_pic: Schema.Attribute.Media<'images'>;
     projects: Schema.Attribute.Relation<'manyToMany', 'api::project.project'>;
     publishedAt: Schema.Attribute.DateTime;
     quote: Schema.Attribute.Text;
@@ -629,7 +627,7 @@ export interface ApiProjectProject extends Struct.CollectionTypeSchema {
         'Research & Innovation',
       ]
     >;
-    cover_img: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    cover_img: Schema.Attribute.Media<'images'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -681,7 +679,7 @@ export interface ApiRegistrationRegistration
     > &
       Schema.Attribute.Private;
     notes: Schema.Attribute.Text;
-    payment: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    payment: Schema.Attribute.Media<'images'>;
     phone: Schema.Attribute.BigInteger;
     publishedAt: Schema.Attribute.DateTime;
     rollNumber: Schema.Attribute.String;
@@ -802,10 +800,7 @@ export interface ApiVenueVenue extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     events: Schema.Attribute.Relation<'oneToMany', 'api::event.event'>;
-    image: Schema.Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios',
-      true
-    >;
+    image: Schema.Attribute.Media<'images', true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::venue.venue'> &
       Schema.Attribute.Private;

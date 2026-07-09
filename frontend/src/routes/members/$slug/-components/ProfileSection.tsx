@@ -30,13 +30,7 @@
   }
 
   const ProfilePage = ({ member }: ProfilePageProps) => {
-    const baseUrl = import.meta.env.VITE_BACKEND_URL;
-    const navigate = useNavigate();
-    const imageUrl = member.profile_pic?.formats?.large?.url
-      ? `${baseUrl}${member.profile_pic.formats.large.url}`
-      : member.profile_pic?.url
-      ? `${baseUrl}${member.profile_pic.url}`
-      : '/default-profile.png';
+
     return (
         <div>
           {/* Hero Section */}  
@@ -50,7 +44,7 @@
 </button>
           <div className="flex flex-col md:flex-row gap-8 items-start mb-12 mt-6">
             <img 
-              src={imageUrl} 
+              src={member.profile_pic?.formats?.large?.url} 
               alt={member.name}
               className="w-64 h-80 object-cover bg-muted rounded-[--radius-lg] flex-shrink-0"
             />

@@ -1,17 +1,26 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { MemberService } from '../lib/services/memberService'
 import { SettingsService } from '../lib/services/settingService'
+
 import { Hero } from './-components/Hero'
 import { About } from './-components/About'
 import { ExecutiveCommittee } from './-components/ExecutiveCommittee'
 import { QuickAccess } from './-components/QuickAccess'
 import { FAQ } from './-components/FAQ'
+
+import { HomeSkeleton } from './-components/HomeSkeleton.tsx'
+import { HomeError } from './-components/HomeError.tsx'
 export const Route = createFileRoute('/')({
   loader: async () => {
-    const members = await MemberService.getFeaturedMembers()
-    const details = await SettingsService.getClubSettings()
+    const [members, details] = await Promise.all([
+      MemberService.getFeaturedMembers(),
+      SettingsService.getClubSettings(),
+    ])
+
     return { members, details }
   },
+  pendingComponent: HomeSkeleton,
+  errorComponent: HomeError,
   component: Index,
 })
 

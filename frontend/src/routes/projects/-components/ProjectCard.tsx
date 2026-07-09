@@ -8,13 +8,7 @@ interface ProjectCardProps {
 }
 
 const ProjectCard = ({ project }: ProjectCardProps) => {
-  const baseUrl = import.meta.env.VITE_BACKEND_URL;
-
-  const imageUrl = project?.cover_img?.formats?.large?.url
-    ? `${baseUrl}${project.cover_img.formats.large.url}`
-    : project?.cover_img?.url
-      ? `${baseUrl}${project.cover_img.url}`
-      : "/default-project.png";
+ 
 
   const memberCount =
     (project.members?.length || 0) + (project.leader ? 1 : 0);
@@ -28,7 +22,7 @@ const ProjectCard = ({ project }: ProjectCardProps) => {
         className="relative block h-48 w-full overflow-hidden"
       >
         <img
-          src={imageUrl}
+          src={project.cover_img?.formats?.medium?.url}
           alt={project.title || "Project cover"}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
         />

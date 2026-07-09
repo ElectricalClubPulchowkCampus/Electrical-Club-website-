@@ -3,12 +3,7 @@ import type { Member } from '../../../types/member';
 import { FiPhone, FiMail, FiHash } from 'react-icons/fi';
 
 const MemberCard = ({ member }: { member: Member }) => {
-  const baseUrl = import.meta.env.VITE_BACKEND_URL;
-  const imageUrl = member.profile_pic?.formats?.thumbnail?.url
-    ? `${baseUrl}${member.profile_pic.formats.thumbnail.url}`
-    : member.profile_pic?.url
-    ? `${baseUrl}${member.profile_pic.url}`
-    : '/default-profile.png';
+
 
   return (
     // Width is owned entirely by the parent grid now (no max-w-sm cap),
@@ -42,7 +37,7 @@ const MemberCard = ({ member }: { member: Member }) => {
           <span className="absolute -top-1.5 -right-1.5 w-3 h-3 border-t-2 border-r-2 border-primary" />
           <span className="absolute -bottom-1.5 -left-1.5 w-3 h-3 border-b-2 border-l-2 border-primary" />
           <span className="absolute -bottom-1.5 -right-1.5 w-3 h-3 border-b-2 border-r-2 border-primary" />
-          <img src={imageUrl} alt={member.name} className="w-16 h-16 object-cover bg-muted" />
+          <img src={member.profile_pic?.formats?.medium?.url} alt={member.name} className="w-16 h-16 object-cover bg-muted" />
         </div>
 
         <div className="pt-1 min-w-0">

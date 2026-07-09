@@ -17,14 +17,7 @@ export const Route = createFileRoute('/projects/$id/')({
 
 function RouteComponent() {
   const project = Route.useLoaderData() as Project
-  const baseUrl = import.meta.env.VITE_BACKEND_URL
-
-  const imageUrl = project?.cover_img?.formats?.large?.url
-    ? `${baseUrl}${project.cover_img.formats.large.url}`
-    : project?.cover_img?.url
-    ? `${baseUrl}${project.cover_img.url}`
-    : '/default-project.png'
-
+  
   const formattedStartDate = project.start_date
     ? new Date(project.start_date).toLocaleDateString('en-US', {
         month: 'long',
@@ -61,7 +54,7 @@ function RouteComponent() {
         <div className="lg:col-span-2">
           <div className="rounded-2xl overflow-hidden mb-6">
             <img
-              src={imageUrl}
+              src={project.cover_img?.formats?.medium?.url}
               alt={project.title || 'Project cover'}
               className="w-full h-56 sm:h-96 object-cover"
             />
