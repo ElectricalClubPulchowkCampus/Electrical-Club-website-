@@ -17,7 +17,7 @@ const ProjectCard = ({ project }: ProjectCardProps) => {
     <div className="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       {/* Image */}
       <Link
-        to="/projects/$id/"
+        to="/projects/$id"
         params={{ id: project.documentId }}
         className="relative block h-48 w-full overflow-hidden"
       >

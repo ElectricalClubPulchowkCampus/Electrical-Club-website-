@@ -1,7 +1,6 @@
 import { strapi } from '@strapi/client'
 
 // For SSR: use server-side env var, for client: use build-time env var
-const isServer = typeof window === 'undefined'
 const baseURL =
   import.meta.env.VITE_STRAPI_URL
 

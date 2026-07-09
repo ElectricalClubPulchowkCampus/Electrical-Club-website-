@@ -93,7 +93,7 @@ function ContactPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
           <p className="text-xs font-bold tracking-[0.14em] uppercase mb-4 text-primary">
             Get in touch
-          </p>
+          </p>Frequently Asked Qu
           <h1 className="text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[1.08] max-w-2xl">
             Let&rsquo;s talk electrical.
           </h1>
@@ -118,7 +118,7 @@ function ContactPage() {
 
               <div className="flex flex-col gap-8">
                 {infoItems.map((item) => {
-                  const Icon = item.icon
+                  
                   return (
                     <div key={item.label} className="relative">
                       <span
@@ -144,7 +144,7 @@ function ContactPage() {
                   )
                 })}
 
-                {details?.Electrical_club_socials?.length > 0 && (
+              
                   <div className="relative">
                     <span
                       className="absolute -left-9 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-background border-2 border-primary"
@@ -154,7 +154,7 @@ function ContactPage() {
                       Follow the club
                     </h3>
                     <div className="flex flex-wrap gap-2.5">
-                      {details.Electrical_club_socials.map((social) => {
+                      {details?.Electrical_club_socials.map((social) => {
                         const Icon = getPlatformIcon(social.platform)
                         return (
                           <a
@@ -171,7 +171,7 @@ function ContactPage() {
                       })}
                     </div>
                   </div>
-                )}
+                
               </div>
             </div>
           </div>

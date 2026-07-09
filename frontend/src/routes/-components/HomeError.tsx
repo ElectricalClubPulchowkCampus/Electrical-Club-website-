@@ -1,4 +1,4 @@
-import { ErrorComponentProps } from '@tanstack/react-router'
+import type  { ErrorComponentProps } from '@tanstack/react-router'
 
 export function HomeError({ error, reset }: ErrorComponentProps) {
   return (
