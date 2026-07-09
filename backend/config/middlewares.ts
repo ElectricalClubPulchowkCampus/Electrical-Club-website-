@@ -21,7 +21,6 @@ export default [
             'dl.airtable.com',
             'res.cloudinary.com',
           ],
-          upgradeInsecureRequests: null,
         },
       },
     },
