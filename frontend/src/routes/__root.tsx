@@ -16,9 +16,15 @@ function RootComponent() {
 
   return (
     <>
-      <Header  />
-      <Outlet />
+     <div className="flex min-h-screen flex-col">
+      <Header />
+
+      <main className="flex-1">
+        <Outlet />
+      </main>
+
       <Footer socials={details?.Electrical_club_socials} />
+    </div>
     </>
   )
 }
