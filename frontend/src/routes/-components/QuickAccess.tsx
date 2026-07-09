@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router"
 const quickAccess = [
   { to: '/events', label: 'Events', desc: 'Workshops, competitions, and what\u2019s coming up.' },
   { to: '/projects', label: 'Projects', desc: 'What members are building right now.' },
-  { to: '/blog', label: 'Blog', desc: 'Write-ups and notes from around the club.' },
   { to: '/contact', label: 'Contact Us', desc: 'Questions, collaborations, sponsorships.' },
 ] as const
 

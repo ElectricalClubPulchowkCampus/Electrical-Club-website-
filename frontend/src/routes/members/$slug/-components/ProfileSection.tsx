@@ -1,7 +1,6 @@
-  import React, { type JSX } from 'react';
   import type { Member } from '../../../../types/member';
-  import { useNavigate } from '@tanstack/react-router';
   import { FaArrowLeft } from "react-icons/fa6";
+  import type { JSX } from 'react';
   import { 
     FaGithub, 
     FaTwitter, 
