@@ -25,13 +25,7 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
 
   function RouteComponent() {
     const event = Route.useLoaderData() as Event
-    const baseUrl = import.meta.env.VITE_BACKEND_URL
 
-    const imageUrl = event?.coverImage?.formats?.large?.url
-      ? `${baseUrl}${event.coverImage.formats.large.url}`
-      : event?.coverImage?.url
-      ? `${baseUrl}${event.coverImage.url}`
-      : '/default-event.png'
 
     const past = isPastEvent(event)
 
@@ -88,7 +82,7 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
           <div className="lg:col-span-2">
             <div className="rounded-2xl overflow-hidden mb-6">
               <img
-                src={imageUrl}
+                src={event.coverImage?.formats?.medium?.url}
                 alt={event.title || 'Event image'}
                 className="w-full h-56 sm:h-96 object-cover"
               />

@@ -6,7 +6,7 @@ const links = [
   { to: '/Members', label: 'Members' },
   { to: '/Events', label: 'Events' },
   { to: '/Projects', label: 'Projects' },
-  { to: '/Blog', label: 'Blog' },
+  {to:'/Contact',label:'Contact Us'}
 ] as const
 
 export function Header() {

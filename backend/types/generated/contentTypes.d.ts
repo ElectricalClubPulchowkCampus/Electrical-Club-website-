@@ -440,6 +440,74 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiClubSettingClubSetting extends Struct.SingleTypeSchema {
+  collectionName: 'club_settings';
+  info: {
+    displayName: 'club-setting';
+    pluralName: 'club-settings';
+    singularName: 'club-setting';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    about: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    Electrical_club_socials: Schema.Attribute.Component<
+      'shared.social-link',
+      true
+    >;
+    faqs: Schema.Attribute.Component<'shared.faqs', true>;
+    hero_title: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::club-setting.club-setting'
+    > &
+      Schema.Attribute.Private;
+    mission: Schema.Attribute.String;
+    phoneNum: Schema.Attribute.Integer;
+    pillars: Schema.Attribute.Component<'shared.club-pillars', true>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiContactMessageContactMessage
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'contact_messages';
+  info: {
+    displayName: 'contact-message';
+    pluralName: 'contact-messages';
+    singularName: 'contact-message';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    email: Schema.Attribute.Email;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::contact-message.contact-message'
+    > &
+      Schema.Attribute.Private;
+    message: Schema.Attribute.Text;
+    name: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiEventEvent extends Struct.CollectionTypeSchema {
   collectionName: 'events';
   info: {
@@ -522,9 +590,7 @@ export interface ApiMemberMember extends Struct.CollectionTypeSchema {
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'980000000'>;
     primaryFocus: Schema.Attribute.String;
-    profile_pic: Schema.Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios'
-    >;
+    profile_pic: Schema.Attribute.Media<'images'>;
     projects: Schema.Attribute.Relation<'manyToMany', 'api::project.project'>;
     publishedAt: Schema.Attribute.DateTime;
     quote: Schema.Attribute.Text;
@@ -561,7 +627,7 @@ export interface ApiProjectProject extends Struct.CollectionTypeSchema {
         'Research & Innovation',
       ]
     >;
-    cover_img: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    cover_img: Schema.Attribute.Media<'images'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -613,7 +679,7 @@ export interface ApiRegistrationRegistration
     > &
       Schema.Attribute.Private;
     notes: Schema.Attribute.Text;
-    payment: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    payment: Schema.Attribute.Media<'images'>;
     phone: Schema.Attribute.BigInteger;
     publishedAt: Schema.Attribute.DateTime;
     rollNumber: Schema.Attribute.String;
@@ -631,7 +697,7 @@ export interface ApiRegistrationRegistration
 export interface ApiSettingSetting extends Struct.SingleTypeSchema {
   collectionName: 'settings';
   info: {
-    displayName: 'setting';
+    displayName: 'payment-setting';
     pluralName: 'settings';
     singularName: 'setting';
   };
@@ -650,6 +716,35 @@ export interface ApiSettingSetting extends Struct.SingleTypeSchema {
       Schema.Attribute.Private;
     paymentQr: Schema.Attribute.Media<'images', true>;
     paymentQrCaption: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiSuggestionSuggestion extends Struct.CollectionTypeSchema {
+  collectionName: 'suggestions';
+  info: {
+    displayName: 'suggestion';
+    pluralName: 'suggestions';
+    singularName: 'suggestion';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::suggestion.suggestion'
+    > &
+      Schema.Attribute.Private;
+    message: Schema.Attribute.Text;
+    name: Schema.Attribute.String & Schema.Attribute.DefaultTo<'anonymous'>;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -705,10 +800,7 @@ export interface ApiVenueVenue extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     events: Schema.Attribute.Relation<'oneToMany', 'api::event.event'>;
-    image: Schema.Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios',
-      true
-    >;
+    image: Schema.Attribute.Media<'images', true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::venue.venue'> &
       Schema.Attribute.Private;
@@ -1235,11 +1327,14 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::club-setting.club-setting': ApiClubSettingClubSetting;
+      'api::contact-message.contact-message': ApiContactMessageContactMessage;
       'api::event.event': ApiEventEvent;
       'api::member.member': ApiMemberMember;
       'api::project.project': ApiProjectProject;
       'api::registration.registration': ApiRegistrationRegistration;
       'api::setting.setting': ApiSettingSetting;
+      'api::suggestion.suggestion': ApiSuggestionSuggestion;
       'api::team.team': ApiTeamTeam;
       'api::venue.venue': ApiVenueVenue;
       'plugin::content-releases.release': PluginContentReleasesRelease;

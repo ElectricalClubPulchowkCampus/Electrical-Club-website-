@@ -4,6 +4,7 @@ import type { Member } from '../../types/member'
 import type { CategoryGroup } from '../../types/team'
 import { groupAndSortByTeam } from '../../lib/grouphelper'
 import MemberGrid from './-components/MemberGrid'
+import type { ErrorComponentProps } from "@tanstack/react-router";
 
 export const Route = createFileRoute('/members/')({
   loader: async () => {
@@ -56,51 +57,134 @@ function RouteComponent() {
     </div>
   )
 }
-
-// 2. LOADING STATE
-function MembersSkeleton() {
-  const placeholders = Array.from({ length: 3 })
-
+function Skeleton({
+  className,
+}: {
+  className?: string
+}) {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
-      <div className="h-8 w-40 bg-muted rounded-md mb-6"></div>
+    <div
+      className={`animate-pulse rounded-md bg-muted ${className ?? ""}`}
+    />
+  )
+}
 
-      <div className="divide-y border-t border-b border-border divide-border">
-        {placeholders.map((_, index) => (
-          <div key={index} className="py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-            <div className="flex items-center gap-3 w-full sm:w-2/3">
-              <div className="h-10 w-10 rounded-full bg-muted shrink-0"></div>
-              <div className="space-y-2 w-full">
-                <div className="h-5 w-3/4 bg-muted rounded-sm"></div>
-                <div className="h-4 w-1/2 bg-muted/60 rounded-sm"></div>
-              </div>
-            </div>
-            <div className="h-6 w-24 bg-muted rounded-sm"></div>
-          </div>
-        ))}
+function MemberCardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <Skeleton className="h-1 w-full rounded-none" />
+
+      <div className="px-6 pt-5 flex items-center gap-2">
+        <Skeleton className="h-2 w-2 rounded-full" />
+        <Skeleton className="h-3 w-24" />
+      </div>
+
+      <div className="px-6 pt-4 flex gap-4">
+        <Skeleton className="h-16 w-16 rounded-md" />
+
+        <div className="flex-1">
+          <Skeleton className="h-5 w-36 mb-2" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+      </div>
+
+      <div className="mx-6 my-5 border-t border-dashed border-border" />
+
+      <div className="px-6 pb-5 space-y-3">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-4 w-52" />
+      </div>
+
+      <div className="mx-6 mb-6">
+        <Skeleton className="h-16 w-full rounded-lg" />
       </div>
     </div>
   )
 }
 
-// 3. ERROR STATE
-function ErrorComponent({ error }: { error: any }) {
+function MembersSkeleton() {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="p-5 border rounded-lg max-w-2xl mx-auto bg-destructive/10 border-destructive/30 shadow-sm">
-        <h3 className="font-bold text-xl text-destructive tracking-tight">
-          Could not load members
-        </h3>
-        <p className="text-sm mt-1 text-foreground/80">
-          {error?.message || 'An unexpected error occurred.'}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
+      {/* Page Header */}
+      <Skeleton className="h-10 w-72 mb-4" />
+      <Skeleton className="h-4 w-full max-w-4xl mb-2" />
+      <Skeleton className="h-4 w-5/6 max-w-3xl mb-10" />
+
+      {Array.from({ length: 2 }).map((_, category) => (
+        <section key={category} className="mb-14">
+          {/* Category */}
+          <div className="flex items-center gap-3 mb-6">
+            <Skeleton className="h-8 w-56" />
+            <Skeleton className="h-6 w-20 rounded-full" />
+          </div>
+
+          {Array.from({ length: 2 }).map((_, team) => (
+            <div key={team} className="mb-10">
+              {/* Team */}
+              <Skeleton className="h-7 w-40 mb-5" />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {Array.from({ length: 3 }).map((_, member) => (
+                  <MemberCardSkeleton key={member} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+      ))}
+    </div>
+  )
+}function ErrorComponent({ error, reset }: ErrorComponentProps) {
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-24 text-center">
+      <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-10">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+          <svg
+            className="h-8 w-8 text-destructive"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 9v4m0 4h.01M10.29 3.86L1.82 18A2 2 0 003.53 21h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
+        <h2 className="text-3xl font-bold mb-2">
+          Failed to load members
+        </h2>
+
+        <p className="text-muted-foreground">
+          We couldn't retrieve the committee members. Please try again.
         </p>
 
-        <div className="mt-4">
-          <code className="text-xs bg-muted px-2 py-1 rounded text-foreground font-mono break-all">
-            Error signature: {error?.status || '500_FETCH_FAILURE'}
-          </code>
+        {import.meta.env.DEV && (
+          <pre className="mt-6 rounded-lg bg-muted p-4 text-left text-xs overflow-auto">
+            {error instanceof Error ? error.message : String(error)}
+          </pre>
+        )}
+
+        <div className="mt-8 flex justify-center gap-3">
+          <button
+            onClick={reset}
+            className="rounded-lg bg-primary px-5 py-2.5 text-primary-foreground"
+          >
+            Try Again
+          </button>
+
+          <button
+            onClick={() => window.location.reload()}
+            className="rounded-lg border border-border px-5 py-2.5"
+          >
+            Reload Page
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

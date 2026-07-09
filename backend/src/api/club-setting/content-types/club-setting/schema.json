@@ -1,0 +1,42 @@
+{
+  "kind": "singleType",
+  "collectionName": "club_settings",
+  "info": {
+    "singularName": "club-setting",
+    "pluralName": "club-settings",
+    "displayName": "club-setting"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Electrical_club_socials": {
+      "type": "component",
+      "component": "shared.social-link",
+      "repeatable": true
+    },
+    "hero_title": {
+      "type": "string"
+    },
+    "about": {
+      "type": "text"
+    },
+    "mission": {
+      "type": "string"
+    },
+    "phoneNum": {
+      "type": "integer"
+    },
+    "pillars": {
+      "type": "component",
+      "component": "shared.club-pillars",
+      "repeatable": true
+    },
+    "faqs": {
+      "type": "component",
+      "component": "shared.faqs",
+      "repeatable": true
+    }
+  }
+}
