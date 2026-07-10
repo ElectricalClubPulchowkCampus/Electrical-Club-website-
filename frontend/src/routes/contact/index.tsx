@@ -93,7 +93,7 @@ function ContactPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
           <p className="text-xs font-bold tracking-[0.14em] uppercase mb-4 text-primary">
             Get in touch
-          </p>Frequently Asked Qu
+          </p>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[1.08] max-w-2xl">
             Let&rsquo;s talk electrical.
           </h1>
