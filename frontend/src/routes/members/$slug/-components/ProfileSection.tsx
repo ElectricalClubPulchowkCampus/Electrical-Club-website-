@@ -1,6 +1,7 @@
-  import type { Member } from '../../../../types/member';
+import type { Member } from '../../../../types/member';
   import { FaArrowLeft } from "react-icons/fa6";
   import type { JSX } from 'react';
+  import { useState } from 'react';
   import { 
     FaGithub, 
     FaTwitter, 
@@ -24,11 +25,26 @@
     youtube: <FaYoutube className="size-4" />,
     tiktok: <FaTiktok className="size-4" />,
   };
+
+  const getInitials = (name: string) => {
+    return name
+      .trim()
+      .split(/\s+/)
+      .map((part) => part[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
+
   interface ProfilePageProps {
     member: Member;
   }
 
   const ProfilePage = ({ member }: ProfilePageProps) => {
+    const [imageError, setImageError] = useState(false);
+    const imageUrl = member.profile_pic?.formats?.large?.url;
+    const showFallback = !imageUrl || imageError;
 
     return (
         <div>
@@ -42,11 +58,18 @@
   Back
 </button>
           <div className="flex flex-col md:flex-row gap-8 items-start mb-12 mt-6">
-            <img 
-              src={member.profile_pic?.formats?.large?.url} 
-              alt={member.name}
-              className="w-64 h-80 object-cover bg-muted rounded-[--radius-lg] flex-shrink-0"
-            />
+            {showFallback ? (
+              <div className="w-64 h-80 flex items-center justify-center bg-secondary border border-border rounded-[--radius-lg] flex-shrink-0 text-5xl font-bold text-primary select-none">
+                {getInitials(member.name)}
+              </div>
+            ) : (
+              <img 
+                src={imageUrl} 
+                alt={member.name}
+                onError={() => setImageError(true)}
+                className="w-64 h-80 object-cover bg-muted rounded-[--radius-lg] flex-shrink-0"
+              />
+            )}
             <div>
               <h2 className="text-sm text-primary font-bold uppercase tracking-wider">
                 {member.team?.name} {member.team?.category} - 
