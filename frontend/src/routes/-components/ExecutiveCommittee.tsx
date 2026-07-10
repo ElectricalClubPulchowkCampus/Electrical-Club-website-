@@ -1,6 +1,5 @@
 import type { Member } from '../../types/member'
 import { Link } from '@tanstack/react-router'
-const baseUrl = import.meta.env.VITE_BACKEND_URL
 
 type ExecutiveCommitteeProps = {
   members: Member[]
