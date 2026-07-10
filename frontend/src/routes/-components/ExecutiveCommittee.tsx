@@ -26,7 +26,7 @@ export function ExecutiveCommittee({ members }: ExecutiveCommitteeProps) {
           <div key={m.name} className="flex flex-col items-center text-center">
             {m.profile_pic ? (
               <img
-                src={`${baseUrl}${
+                src={`${
                   m.profile_pic.formats?.thumbnail?.url ?? m.profile_pic.url
                 }`}
                 alt={m.name}
