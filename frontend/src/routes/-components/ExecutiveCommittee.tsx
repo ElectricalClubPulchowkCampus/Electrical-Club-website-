@@ -22,17 +22,22 @@ export function ExecutiveCommittee({ members }: ExecutiveCommitteeProps) {
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {members.map((m) => (
-          <div key={m.name} className="flex flex-col items-center text-center">
+          <Link
+            key={m.name}
+            to="/members/$slug"
+            params={{ slug: m.slug }}
+            className="flex flex-col items-center text-center group rounded-lg p-2 -m-2 transition-colors hover:bg-secondary/50"
+          >
             {m.profile_pic ? (
               <img
                 src={`${
                   m.profile_pic.formats?.thumbnail?.url ?? m.profile_pic.url
                 }`}
                 alt={m.name}
-                className="h-20 w-20 rounded-full object-cover border border-border mb-3"
+                className="h-20 w-20 rounded-full object-cover border border-border mb-3 transition-transform group-hover:scale-105"
               />
             ) : (
-              <div className="h-20 w-20 rounded-full bg-secondary border border-border flex items-center justify-center text-lg font-medium text-primary mb-3">
+              <div className="h-20 w-20 rounded-full bg-secondary border border-border flex items-center justify-center text-lg font-medium text-primary mb-3 transition-transform group-hover:scale-105">
                 {m.name
                   .split(' ')
                   .map((p) => p[0])
@@ -41,9 +46,11 @@ export function ExecutiveCommittee({ members }: ExecutiveCommitteeProps) {
                   .toUpperCase()}
               </div>
             )}
-            <h3 className="text-sm font-semibold">{m.name}</h3>
+            <h3 className="text-sm font-semibold group-hover:text-primary transition-colors">
+              {m.name}
+            </h3>
             <p className="text-xs text-muted-foreground">{m.role}</p>
-          </div>
+          </Link>
         ))}
       </div>
     </section>

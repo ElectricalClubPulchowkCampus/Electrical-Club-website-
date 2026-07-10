@@ -1,9 +1,23 @@
 import { Link } from '@tanstack/react-router';
+import { useState } from 'react';
 import type { Member } from '../../../types/member';
 import { FiPhone, FiMail, FiHash } from 'react-icons/fi';
 
-const MemberCard = ({ member }: { member: Member }) => {
+const getInitials = (name: string) => {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+};
 
+const MemberCard = ({ member }: { member: Member }) => {
+  const [imageError, setImageError] = useState(false);
+  const imageUrl = member.profile_pic?.formats?.medium?.url;
+  const showFallback = !imageUrl || imageError;
 
   return (
     // Width is owned entirely by the parent grid now (no max-w-sm cap),
@@ -37,7 +51,18 @@ const MemberCard = ({ member }: { member: Member }) => {
           <span className="absolute -top-1.5 -right-1.5 w-3 h-3 border-t-2 border-r-2 border-primary" />
           <span className="absolute -bottom-1.5 -left-1.5 w-3 h-3 border-b-2 border-l-2 border-primary" />
           <span className="absolute -bottom-1.5 -right-1.5 w-3 h-3 border-b-2 border-r-2 border-primary" />
-          <img src={member.profile_pic?.formats?.medium?.url} alt={member.name} className="w-16 h-16 object-cover bg-muted" />
+          {showFallback ? (
+            <div className="w-16 h-16 flex items-center justify-center bg-primary/10 text-primary font-bold text-lg font-mono select-none">
+              {getInitials(member.name)}
+            </div>
+          ) : (
+            <img
+              src={imageUrl}
+              alt={member.name}
+              onError={() => setImageError(true)}
+              className="w-16 h-16 object-cover bg-muted"
+            />
+          )}
         </div>
 
         <div className="pt-1 min-w-0">
@@ -57,7 +82,7 @@ const MemberCard = ({ member }: { member: Member }) => {
         {member.rollNumber && (
           <div className="flex items-center gap-3 text-sm text-foreground min-w-0">
             <FiHash className="w-3.5 h-3.5 text-primary shrink-0" />
-            <span className="font-mono text-[11px] tracking-wider text-muted-foreground w-9 shrink-0">REG</span>
+            <span className="font-mono text-[11px] tracking-wider text-muted-foreground w-9 shrink-0">ROLL:</span>
             <span className="font-mono text-foreground truncate min-w-0 flex-1">{member.rollNumber}</span>
           </div>
         )}
