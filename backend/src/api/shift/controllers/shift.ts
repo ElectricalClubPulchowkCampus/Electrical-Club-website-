@@ -39,10 +39,7 @@ export default factories.createCoreController('api::shift.shift', ({ strapi }) =
     });
 
     const capacity =
-      shiftDoc.capacity ??
-      shiftDoc.venue?.capacity ??
-      shiftDoc.event?.venue?.capacity ??
-      null;
+      shiftDoc.capacity;
 
     const isFull = typeof capacity === 'number' && registeredCount >= capacity;
 
