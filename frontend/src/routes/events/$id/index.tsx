@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-  import { ArrowLeft, MapPin, CalendarDays, User, Users, ExternalLink, Wallet } from 'lucide-react'
+  import { ArrowLeft, MapPin, CalendarDays, User, Users, ExternalLink, Wallet, Clock } from 'lucide-react'
   import { EventsService } from '../../../lib/services/eventService'
   import { CATEGORY_LABELS, STATUS_LABELS } from '../-constant'
   import type { Event } from '../../../types/event'
@@ -23,6 +23,18 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
     return false
   }
 
+  // Formats a Strapi "time" string (HH:mm:ss.SSS) into a readable 12-hour time
+  function formatTime(time?: string) {
+    if (!time) return null
+    const [hoursStr, minutesStr] = time.split(':')
+    const hours = Number(hoursStr)
+    const minutes = Number(minutesStr)
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return time
+    const date = new Date()
+    date.setHours(hours, minutes, 0, 0)
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  }
+
   function RouteComponent() {
     const event = Route.useLoaderData() as Event
 
@@ -38,25 +50,13 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
         })
       : null
 
-    const formattedTime = event.startDate
-      ? new Date(event.startDate).toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-        })
-      : null
 
-    // Only show an end time when it's on the same day as the start — a
-    // multi-day end date is shown as its own line via formattedEndDate instead.
     const sameDay =
       event.startDate &&
       event.endDate &&
       new Date(event.startDate).toDateString() === new Date(event.endDate).toDateString()
 
-    const formattedEndTime =
-      event.endDate && sameDay
-        ? new Date(event.endDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-        : null
-
+   
     const formattedEndDate =
       event.endDate && !sameDay
         ? new Date(event.endDate).toLocaleDateString('en-US', {
@@ -66,6 +66,8 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
             year: 'numeric',
           })
         : null
+
+    const shifts = event.shift ?? []
 
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -82,7 +84,7 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
           <div className="lg:col-span-2">
             <div className="rounded-2xl overflow-hidden mb-6">
               <img
-                src={event.coverImage?.formats?.medium?.url}
+                src={event.coverImage?.url}
                 alt={event.title || 'Event image'}
                 className="w-full h-56 sm:h-96 object-cover"
               />
@@ -101,6 +103,59 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
     {event.description}
   </div>
 )}
+
+            {shifts.length > 0 && (
+              <div className="mt-8">
+                <h2 className="text-lg font-semibold text-foreground mb-4">
+                  {shifts.length > 1 ? 'Schedule' : 'Timing'}
+                </h2>
+                <div className="space-y-3">
+                  {shifts.map((shift, index) => {
+                    const start = formatTime(shift.startTime)
+                    const end = formatTime(shift.endTime)
+                    return (
+                      <div
+                        key={shift.id ?? index}
+                        className="rounded-xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                      >
+                        <div className="flex items-start gap-3">
+                          <Clock className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                          <div>
+                            <p className="text-foreground font-medium">
+                              {shift.label || `Shift ${index + 1}`}
+                            </p>
+                            {(start || end) && (
+                              <p className="text-muted-foreground text-sm">
+                                {start}
+                                {start && end && ' – '}
+                                {end}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {(shift.venue?.name || typeof shift.capacity === 'number') && (
+                          <div className="flex flex-col sm:items-end gap-1 text-sm">
+                            {shift.venue?.name && (
+                              <div className="flex items-center gap-1.5 text-foreground">
+                                <MapPin className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                                {shift.venue.name}
+                              </div>
+                            )}
+                            {typeof shift.capacity === 'number' && (
+                              <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                                Capacity: {shift.capacity}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar: event info + registration */}
@@ -117,12 +172,8 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
                   <CalendarDays className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
                   <div>
                     <p className="text-foreground font-medium">{formattedDate}</p>
-                    {formattedTime && (
-                      <p className="text-muted-foreground">
-                        {formattedTime}
-                        {formattedEndTime ? ` – ${formattedEndTime}` : ''}
-                      </p>
-                    )}
+                    
+                     
                     {formattedEndDate && (
                       <p className="text-muted-foreground">Ends {formattedEndDate}</p>
                     )}

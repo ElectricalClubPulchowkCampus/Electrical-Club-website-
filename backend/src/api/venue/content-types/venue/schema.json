@@ -41,6 +41,12 @@
       "relation": "oneToMany",
       "target": "api::registration.registration",
       "mappedBy": "venue"
+    },
+    "shifts": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::shift.shift",
+      "mappedBy": "venue"
     }
   }
 }

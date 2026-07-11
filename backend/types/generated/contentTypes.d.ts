@@ -543,7 +543,7 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
       'oneToMany',
       'api::registration.registration'
     >;
-    shift: Schema.Attribute.Component<'shared.shift', true>;
+    shifts: Schema.Attribute.Relation<'oneToMany', 'api::shift.shift'>;
     slug: Schema.Attribute.UID<'title'>;
     startDate: Schema.Attribute.Date;
     status_event: Schema.Attribute.Enumeration<
@@ -685,6 +685,7 @@ export interface ApiRegistrationRegistration
     phone: Schema.Attribute.BigInteger;
     publishedAt: Schema.Attribute.DateTime;
     rollNumber: Schema.Attribute.String;
+    shift: Schema.Attribute.Relation<'manyToOne', 'api::shift.shift'>;
     status_registration: Schema.Attribute.Enumeration<
       ['pending', 'confirmed', 'cancelled']
     > &
@@ -722,6 +723,40 @@ export interface ApiSettingSetting extends Struct.SingleTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+  };
+}
+
+export interface ApiShiftShift extends Struct.CollectionTypeSchema {
+  collectionName: 'shifts';
+  info: {
+    displayName: 'shift';
+    pluralName: 'shifts';
+    singularName: 'shift';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    capacity: Schema.Attribute.Integer;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    endTime: Schema.Attribute.Time;
+    event: Schema.Attribute.Relation<'manyToOne', 'api::event.event'>;
+    label: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::shift.shift'> &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    registrations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::registration.registration'
+    >;
+    startTime: Schema.Attribute.Time;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    venue: Schema.Attribute.Relation<'manyToOne', 'api::venue.venue'>;
   };
 }
 
@@ -813,6 +848,7 @@ export interface ApiVenueVenue extends Struct.CollectionTypeSchema {
       'oneToMany',
       'api::registration.registration'
     >;
+    shifts: Schema.Attribute.Relation<'oneToMany', 'api::shift.shift'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1336,6 +1372,7 @@ declare module '@strapi/strapi' {
       'api::project.project': ApiProjectProject;
       'api::registration.registration': ApiRegistrationRegistration;
       'api::setting.setting': ApiSettingSetting;
+      'api::shift.shift': ApiShiftShift;
       'api::suggestion.suggestion': ApiSuggestionSuggestion;
       'api::team.team': ApiTeamTeam;
       'api::venue.venue': ApiVenueVenue;
