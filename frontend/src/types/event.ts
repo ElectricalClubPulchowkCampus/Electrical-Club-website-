@@ -13,7 +13,7 @@ export interface Event extends StrapiMeta {
   description?: string
   summary?: string
   coverImage?: StrapiMedia | null
-  gallery?: StrapiMedia | null // Schema defined multiple: false, behaves as singular media field
+  gallery?: StrapiMedia[] | null // Schema defined multiple: false, behaves as singular media field
   startDate?: string // format: YYYY-MM-DD
   endDate?: string
   category?: EventCategory
@@ -24,4 +24,5 @@ export interface Event extends StrapiMeta {
   registrations?: Registration[] | null
   fee?: number | null
   shifts?: Shift[] | null // repeatable component
+  galleryDriveLink:string
 }
