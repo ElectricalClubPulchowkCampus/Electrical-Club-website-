@@ -17,30 +17,38 @@ import {
   Clock,
 } from 'lucide-react'
 import { EventsService } from '../../../lib/services/eventService'
-import type { EventCapacity } from '../../../types/registration'
 import type { Event } from '../../../types/event'
 import type { RegistrationInput } from '../../../types/registration'
 import { RegistrationService } from '../../../lib/services/registrationService'
+import { ShiftService } from '../../../lib/services/shiftService'
 import { UploadService } from '../../../lib/services/uploadService'
 import { SettingsService } from '../../../lib/services/settingService'
-
+import type { ShiftCapacityResponse } from '../../../types/Shift'
 interface RegisterLoaderData {
   event: Event
-  capacity: EventCapacity
   paymentQrList: { url: string; alternativeText?: string | null }[]
+  shiftCapacities: Record<string, ShiftCapacityResponse>
 }
 
 export const Route = createFileRoute('/events/$id/register')({
   loader: async ({ params }): Promise<RegisterLoaderData> => {
-    const [event, capacity, settings] = await Promise.all([
+    const [event, settings] = await Promise.all([
       EventsService.getEventById(params.id),
-      RegistrationService.getEventCapacity(params.id),
       SettingsService.getSettings(),
     ])
+
+    const shifts = (event as Event)?.shifts ?? []
+    const capacityEntries = await Promise.all(
+      shifts.map(async (shift) => [
+        shift.documentId,
+        await ShiftService.getShiftCapacity(shift.documentId),
+      ] as const)
+    )
+
     return {
       event: event as Event,
-      capacity: capacity as EventCapacity,
       paymentQrList: settings?.paymentQr ?? [],
+      shiftCapacities: Object.fromEntries(capacityEntries),
     }
   },
   component: RouteComponent,
@@ -105,7 +113,7 @@ const defaultValues: RegisterFormValues = {
 }
 
 function RouteComponent() {
-  const { event, capacity, paymentQrList } = Route.useLoaderData() as RegisterLoaderData
+  const { event, paymentQrList, shiftCapacities } = Route.useLoaderData() as RegisterLoaderData
   const navigate = useNavigate()
 
   const resolveUrl = (url: string) =>
@@ -119,8 +127,7 @@ function RouteComponent() {
   const shifts = event.shifts ?? []
 
   const past = isPastEvent(event)
-  const isFull = capacity.isFull
-  const spotsLeft = typeof capacity.capacity === 'number' ? capacity.capacity - capacity.registered : null
+  
 
   // ---- Form state via react-hook-form (validation rules inline, no schema lib) ----
   const {
@@ -284,24 +291,7 @@ function RouteComponent() {
     )
   }
 
-  if (isFull) {
-    return (
-      <div className="max-w-lg mx-auto px-4 sm:px-6 py-16 text-center">
-        <h1 className="text-xl font-bold text-foreground">Registration closed</h1>
-        <p className="text-sm text-muted-foreground mt-2">
-          {event.title} has reached its capacity of {capacity.capacity}.
-        </p>
-        <Link
-          to="/events/$id"
-          params={{ id: event.documentId }}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 mt-6"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Event
-        </Link>
-      </div>
-    )
-  }
+ 
 
   if (status === 'success') {
     return (
@@ -358,12 +348,7 @@ function RouteComponent() {
               <p className="text-foreground">{event.venue.name}</p>
             </div>
           )}
-          {spotsLeft !== null && (
-            <div className="flex items-start gap-3">
-              <Users className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-              <p className="text-foreground">{spotsLeft} spots left</p>
-            </div>
-          )}
+          
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-5">
@@ -375,59 +360,63 @@ function RouteComponent() {
                 </label>
                 <div className="space-y-2">
                   {shifts.map((shift) => {
-                    const shiftValue = shift.documentId
-                    const start = formatTime(shift.startTime)
-                    const end = formatTime(shift.endTime)
-                    const isSelected = selectedShift === shiftValue
-                    return (
-                      <label
-                        key={shiftValue}
-                        htmlFor={`shift-${shiftValue}`}
-                        className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
-                          isSelected
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border bg-background hover:bg-muted/40'
-                        }`}
-                      >
-                        <input
-                          id={`shift-${shiftValue}`}
-                          type="radio"
-                          value={shiftValue}
-                          className="mt-1 accent-blue-600"
-                          aria-invalid={!!errors.shift}
-                          aria-describedby={errors.shift ? 'shift-error' : undefined}
-                          {...register('shift', {
-                            required: 'Please select a shift.',
-                          })}
-                        />
-                        <div className="flex-1 text-sm">
-                          <p className="text-foreground font-medium">
-                            {shift.label || 'Shift'}
-                          </p>
-                          {(start || end) && (
-                            <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <Clock className="h-3 w-3 flex-shrink-0" />
-                              {start}
-                              {start && end && ' – '}
-                              {end}
-                            </p>
-                          )}
-                          {shift.venue?.name && (
-                            <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <MapPin className="h-3 w-3 flex-shrink-0" />
-                              {shift.venue.name}
-                            </p>
-                          )}
-                          {typeof shift.capacity === 'number' && (
-                            <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <Users className="h-3 w-3 flex-shrink-0" />
-                              Capacity: {shift.capacity}
-                            </p>
-                          )}
-                        </div>
-                      </label>
-                    )
-                  })}
+  const shiftValue = shift.documentId
+  const start = formatTime(shift.startTime)
+  const end = formatTime(shift.endTime)
+  const isSelected = selectedShift === shiftValue
+  const shiftCap = shiftCapacities[shift.documentId]
+  const shiftSpotsLeft = shiftCap?.spotsLeft ?? null
+  const shiftFull = shiftCap?.isFull ?? false
+  return (
+    <label
+      key={shiftValue}
+      htmlFor={`shift-${shiftValue}`}
+      className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${
+        shiftFull
+          ? 'border-border bg-muted/20 opacity-60 cursor-not-allowed'
+          : isSelected
+          ? 'border-primary bg-primary/5 cursor-pointer'
+          : 'border-border bg-background hover:bg-muted/40 cursor-pointer'
+      }`}
+    >
+      <input
+        id={`shift-${shiftValue}`}
+        type="radio"
+        value={shiftValue}
+        disabled={shiftFull}
+        className="mt-1 accent-blue-600 disabled:opacity-40 disabled:cursor-not-allowed"
+        aria-invalid={!!errors.shift}
+        aria-describedby={errors.shift ? 'shift-error' : undefined}
+        {...register('shift', {
+          required: 'Please select a shift.',
+        })}
+      />
+      <div className="flex-1 text-sm">
+        <p className="text-foreground font-medium">
+          {shift.label || 'Shift'}
+        </p>
+        {(start || end) && (
+          <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
+            <Clock className="h-3 w-3 flex-shrink-0" />
+            {start}
+            {start && end && ' – '}
+            {end}
+          </p>
+        )}
+        {shiftSpotsLeft !== null && (
+          <p
+            className={`flex items-center gap-1 mt-0.5 ${
+              shiftFull ? 'text-destructive font-medium' : 'text-muted-foreground'
+            }`}
+          >
+            <Users className="h-3 w-3 flex-shrink-0" />
+            {shiftFull ? 'Full' : `${shiftSpotsLeft} spots left`}
+          </p>
+        )}
+      </div>
+    </label>
+  )
+})}
                 </div>
                 {errors.shift && (
                   <p id="shift-error" role="alert" className="text-xs text-destructive mt-1">

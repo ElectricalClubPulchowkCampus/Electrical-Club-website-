@@ -17,9 +17,9 @@ export interface Shift {
   publishedAt?: string
 }
 
-
-export interface ShiftCapacity {
-  capacity: number
+export interface ShiftCapacityResponse {
+  capacity: number | null
   registered: number
   isFull: boolean
+  spotsLeft: number | null
 }
