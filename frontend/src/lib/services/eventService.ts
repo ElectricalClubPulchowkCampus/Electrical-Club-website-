@@ -8,6 +8,7 @@ export const EventsService = {
         coverImage: true,
         venue: true,
         organizer: true,
+        shifts:true
       },
       sort: ['order:asc'],
     })
@@ -21,6 +22,7 @@ export const EventsService = {
         coverImage: true,
         venue: true,
         organizer: true,
+        shifts:true
       },
       sort: ['order:asc'],
     })

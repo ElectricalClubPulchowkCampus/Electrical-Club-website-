@@ -23,10 +23,6 @@ import type { RegistrationInput } from '../../../types/registration'
 import { RegistrationService } from '../../../lib/services/registrationService'
 import { UploadService } from '../../../lib/services/uploadService'
 import { SettingsService } from '../../../lib/services/settingService'
-interface RegisterLoaderData {
-  event: Event
-  capacity: EventCapacity
-}
 
 interface RegisterLoaderData {
   event: Event
@@ -119,9 +115,9 @@ function RouteComponent() {
     ? paymentQrList.map((m) => ({ url: resolveUrl(m.url), alt: m.alternativeText || 'Payment QR code' }))
     : [{ url: '/esewa-qr.jpeg', alt: 'eSewa QR code for payment' }] // static fallback
 
-  const shifts = event.shift ?? []
+  // Shift is now a real relation (Event.shifts), not an embedded component.
+  const shifts = event.shifts ?? []
 
-  // ...rest unchanged until the payment block
   const past = isPastEvent(event)
   const isFull = capacity.isFull
   const spotsLeft = typeof capacity.capacity === 'number' ? capacity.capacity - capacity.registered : null
@@ -230,15 +226,9 @@ function RouteComponent() {
         // Links the uploaded file to the `payment` media relation field on the
         // Registration content type in Strapi.
         ...(uploaded ? { payment: uploaded.id } : {}),
-        // Identifies which shift (component entry) the registrant picked.
-        // NOTE: requires a `shift` field on the Registration content type — see notes below.
+        // documentId of the selected Shift (Shift is now a proper relation on Registration).
         ...(shifts.length > 0 && values.shift ? { shift: values.shift } : {}),
       }
-
-      // TEMP DEBUG: confirm `payment` is actually present in the outgoing payload.
-      // Remove this once the linking issue is confirmed fixed.
-      // eslint-disable-next-line no-console
-      console.log('[DEBUG] registration payload being sent:', payload)
 
       await RegistrationService.registerForEvent(event.documentId, payload, {
         signal: controller.signal,
@@ -384,8 +374,8 @@ function RouteComponent() {
                   Select Shift <span className="text-red-500">*</span>
                 </label>
                 <div className="space-y-2">
-                  {shifts.map((shift, index) => {
-                    const shiftValue = String(shift.id ?? index)
+                  {shifts.map((shift) => {
+                    const shiftValue = shift.documentId
                     const start = formatTime(shift.startTime)
                     const end = formatTime(shift.endTime)
                     const isSelected = selectedShift === shiftValue
@@ -412,7 +402,7 @@ function RouteComponent() {
                         />
                         <div className="flex-1 text-sm">
                           <p className="text-foreground font-medium">
-                            {shift.label || `Shift ${index + 1}`}
+                            {shift.label || 'Shift'}
                           </p>
                           {(start || end) && (
                             <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -602,20 +592,20 @@ function RouteComponent() {
               </p>
 
               <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-muted/30 p-3 mb-3">
-  <div className="flex flex-wrap justify-center gap-3">
-    {qrImages.map((qr, i) => (
-      <img
-        key={i}
-        src={qr.url}
-        alt={qr.alt}
-        className="h-40 w-40 rounded-md border border-border object-contain bg-white"
-      />
-    ))}
-  </div>
-  <p className="text-xs text-muted-foreground text-center">
-    Scan any QR above with your payment app, then upload your receipt below.
-  </p>
-</div>
+                <div className="flex flex-wrap justify-center gap-3">
+                  {qrImages.map((qr, i) => (
+                    <img
+                      key={i}
+                      src={qr.url}
+                      alt={qr.alt}
+                      className="h-40 w-40 rounded-md border border-border object-contain bg-white"
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Scan any QR above with your payment app, then upload your receipt below.
+                </p>
+              </div>
 
               <div className="relative">
                 <Paperclip className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
