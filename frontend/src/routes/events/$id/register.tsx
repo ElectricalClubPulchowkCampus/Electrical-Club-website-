@@ -563,7 +563,7 @@ function RouteComponent() {
                       const isSelected = selectedShift === shiftValue
                       const shiftCap = shiftCapacities[shift.documentId]
                       const shiftSpotsLeft = shiftCap?.spotsLeft ?? null
-                      const shiftTotal = shiftCap?.totalSpots ?? null
+                      const shiftTotal = shiftCap?.capacity
                       const shiftFull = shiftCap?.isFull ?? false
                       const fillRatio =
                         shiftTotal && shiftSpotsLeft !== null
