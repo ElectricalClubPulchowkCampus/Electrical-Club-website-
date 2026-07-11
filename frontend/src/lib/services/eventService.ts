@@ -27,5 +27,5 @@ export const EventsService = {
 
     return response.data as Event
   }
-  
+
 }

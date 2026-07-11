@@ -2,18 +2,10 @@ import type { StrapiMeta, StrapiMedia } from './strapi'
 import type { Venue } from './venue'
 import type { Team } from './team'
 import type { Registration } from './registration'
-
+import type { Shift } from './Shift'
 export type EventCategory = 'workshop' | 'seminar' | 'competition' | 'cultural' | 'sports' | 'other'
 export type EventStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
 
-export interface Shift {
-  id?: number
-  label?: string
-  startTime?: string // format: HH:mm:ss.SSS
-  endTime?: string // format: HH:mm:ss.SSS
-  venue?: Venue | null
-  capacity?: number | null
-}
 
 export interface Event extends StrapiMeta {
   title?: string
@@ -31,5 +23,5 @@ export interface Event extends StrapiMeta {
   organizer?: Team | null
   registrations?: Registration[] | null
   fee?: number | null
-  shift?: Shift[] | null // repeatable component
+  shifts?: Shift[] | null // repeatable component
 }

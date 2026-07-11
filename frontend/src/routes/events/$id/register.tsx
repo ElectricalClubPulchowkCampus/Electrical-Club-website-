@@ -14,6 +14,7 @@ import {
   Hash,
   FileText,
   Paperclip,
+  Clock,
 } from 'lucide-react'
 import { EventsService } from '../../../lib/services/eventService'
 import type { EventCapacity } from '../../../types/registration'
@@ -59,6 +60,18 @@ function isPastEvent(event: Event) {
   return false
 }
 
+// Formats a Strapi "time" string (HH:mm:ss.SSS) into a readable 12-hour time
+function formatTime(time?: string) {
+  if (!time) return null
+  const [hoursStr, minutesStr] = time.split(':')
+  const hours = Number(hoursStr)
+  const minutes = Number(minutesStr)
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return time
+  const date = new Date()
+  date.setHours(hours, minutes, 0, 0)
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
 // ---- File upload constraints ----
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
 const ALLOWED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
@@ -82,6 +95,7 @@ type RegisterFormValues = {
   Institution: string
   rollNumber: string
   notes: string
+  shift: string
 }
 
 const defaultValues: RegisterFormValues = {
@@ -91,6 +105,7 @@ const defaultValues: RegisterFormValues = {
   Institution: '',
   rollNumber: '',
   notes: '',
+  shift: '',
 }
 
 function RouteComponent() {
@@ -104,6 +119,8 @@ function RouteComponent() {
     ? paymentQrList.map((m) => ({ url: resolveUrl(m.url), alt: m.alternativeText || 'Payment QR code' }))
     : [{ url: '/esewa-qr.jpeg', alt: 'eSewa QR code for payment' }] // static fallback
 
+  const shifts = event.shift ?? []
+
   // ...rest unchanged until the payment block
   const past = isPastEvent(event)
   const isFull = capacity.isFull
@@ -113,9 +130,12 @@ function RouteComponent() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<RegisterFormValues>({ defaultValues, mode: 'onBlur' })
+
+  const selectedShift = watch('shift')
 
   // ---- File upload state ----
   const [file, setFile] = useState<File | null>(null)
@@ -210,6 +230,9 @@ function RouteComponent() {
         // Links the uploaded file to the `payment` media relation field on the
         // Registration content type in Strapi.
         ...(uploaded ? { payment: uploaded.id } : {}),
+        // Identifies which shift (component entry) the registrant picked.
+        // NOTE: requires a `shift` field on the Registration content type — see notes below.
+        ...(shifts.length > 0 && values.shift ? { shift: values.shift } : {}),
       }
 
       // TEMP DEBUG: confirm `payment` is actually present in the outgoing payload.
@@ -355,6 +378,75 @@ function RouteComponent() {
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {shifts.length > 0 && (
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  Select Shift <span className="text-red-500">*</span>
+                </label>
+                <div className="space-y-2">
+                  {shifts.map((shift, index) => {
+                    const shiftValue = String(shift.id ?? index)
+                    const start = formatTime(shift.startTime)
+                    const end = formatTime(shift.endTime)
+                    const isSelected = selectedShift === shiftValue
+                    return (
+                      <label
+                        key={shiftValue}
+                        htmlFor={`shift-${shiftValue}`}
+                        className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                          isSelected
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border bg-background hover:bg-muted/40'
+                        }`}
+                      >
+                        <input
+                          id={`shift-${shiftValue}`}
+                          type="radio"
+                          value={shiftValue}
+                          className="mt-1 accent-blue-600"
+                          aria-invalid={!!errors.shift}
+                          aria-describedby={errors.shift ? 'shift-error' : undefined}
+                          {...register('shift', {
+                            required: 'Please select a shift.',
+                          })}
+                        />
+                        <div className="flex-1 text-sm">
+                          <p className="text-foreground font-medium">
+                            {shift.label || `Shift ${index + 1}`}
+                          </p>
+                          {(start || end) && (
+                            <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Clock className="h-3 w-3 flex-shrink-0" />
+                              {start}
+                              {start && end && ' – '}
+                              {end}
+                            </p>
+                          )}
+                          {shift.venue?.name && (
+                            <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <MapPin className="h-3 w-3 flex-shrink-0" />
+                              {shift.venue.name}
+                            </p>
+                          )}
+                          {typeof shift.capacity === 'number' && (
+                            <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Users className="h-3 w-3 flex-shrink-0" />
+                              Capacity: {shift.capacity}
+                            </p>
+                          )}
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
+                {errors.shift && (
+                  <p id="shift-error" role="alert" className="text-xs text-destructive mt-1">
+                    {errors.shift.message}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="sm:col-span-2">
               <label htmlFor="fullName" className="block text-sm font-medium text-foreground mb-1.5">
                 Full Name

@@ -103,59 +103,6 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
     {event.description}
   </div>
 )}
-
-            {shifts.length > 0 && (
-              <div className="mt-8">
-                <h2 className="text-lg font-semibold text-foreground mb-4">
-                  {shifts.length > 1 ? 'Schedule' : 'Timing'}
-                </h2>
-                <div className="space-y-3">
-                  {shifts.map((shift, index) => {
-                    const start = formatTime(shift.startTime)
-                    const end = formatTime(shift.endTime)
-                    return (
-                      <div
-                        key={shift.id ?? index}
-                        className="rounded-xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                      >
-                        <div className="flex items-start gap-3">
-                          <Clock className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-                          <div>
-                            <p className="text-foreground font-medium">
-                              {shift.label || `Shift ${index + 1}`}
-                            </p>
-                            {(start || end) && (
-                              <p className="text-muted-foreground text-sm">
-                                {start}
-                                {start && end && ' – '}
-                                {end}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {(shift.venue?.name || typeof shift.capacity === 'number') && (
-                          <div className="flex flex-col sm:items-end gap-1 text-sm">
-                            {shift.venue?.name && (
-                              <div className="flex items-center gap-1.5 text-foreground">
-                                <MapPin className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                                {shift.venue.name}
-                              </div>
-                            )}
-                            {typeof shift.capacity === 'number' && (
-                              <div className="flex items-center gap-1.5 text-muted-foreground">
-                                <Users className="h-3.5 w-3.5 flex-shrink-0" />
-                                Capacity: {shift.capacity}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Sidebar: event info + registration */}
@@ -225,6 +172,54 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
                     {event.organizer.category && (
                       <p className="text-muted-foreground">{event.organizer.category}</p>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {shifts.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <Clock className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                  <div className="flex-1 space-y-3">
+                    <p className="text-foreground font-medium">
+                      {shifts.length > 1 ? 'Schedule' : 'Timing'}
+                    </p>
+                    {shifts.map((shift, index) => {
+                      const start = formatTime(shift.startTime)
+                      const end = formatTime(shift.endTime)
+                      return (
+                        <div
+                          key={shift.id ?? index}
+                          className={
+                            shifts.length > 1
+                              ? 'pb-3 border-b border-border last:border-0 last:pb-0'
+                              : ''
+                          }
+                        >
+                          <p className="text-foreground">
+                            {shift.label || `Shift ${index + 1}`}
+                          </p>
+                          {(start || end) && (
+                            <p className="text-muted-foreground">
+                              {start}
+                              {start && end && ' – '}
+                              {end}
+                            </p>
+                          )}
+                          {shift.venue?.name && (
+                            <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <MapPin className="h-3 w-3 flex-shrink-0" />
+                              {shift.venue.name}
+                            </p>
+                          )}
+                          {typeof shift.capacity === 'number' && (
+                            <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Users className="h-3 w-3 flex-shrink-0" />
+                              Capacity: {shift.capacity}
+                            </p>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}
