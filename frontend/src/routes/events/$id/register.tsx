@@ -302,9 +302,6 @@ function RouteComponent() {
       })
     : null
 
-  const formattedTime = event.startDate
-    ? new Date(event.startDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-    : null
 
   if (past) {
     return (
@@ -385,7 +382,6 @@ function RouteComponent() {
               <CalendarDays className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <p className="text-foreground">
                 {formattedDate}
-                {formattedTime ? ` · ${formattedTime}` : ''}
               </p>
             </div>
           )}
