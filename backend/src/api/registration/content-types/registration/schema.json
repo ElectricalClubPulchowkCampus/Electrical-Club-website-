@@ -61,6 +61,12 @@
       "allowedTypes": [
         "images"
       ]
+    },
+    "shift": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::shift.shift",
+      "inversedBy": "registrations"
     }
   }
 }

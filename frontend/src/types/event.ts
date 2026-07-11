@@ -1,10 +1,11 @@
 import type { StrapiMeta, StrapiMedia } from './strapi'
 import type { Venue } from './venue'
-import type  { Team } from './team'
+import type { Team } from './team'
 import type { Registration } from './registration'
-
+import type { Shift } from './Shift'
 export type EventCategory = 'workshop' | 'seminar' | 'competition' | 'cultural' | 'sports' | 'other'
 export type EventStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
+
 
 export interface Event extends StrapiMeta {
   title?: string
@@ -22,4 +23,5 @@ export interface Event extends StrapiMeta {
   organizer?: Team | null
   registrations?: Registration[] | null
   fee?: number | null
+  shifts?: Shift[] | null // repeatable component
 }

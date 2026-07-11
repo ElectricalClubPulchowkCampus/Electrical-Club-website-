@@ -1,5 +1,6 @@
 import type { Event } from './event'
 import type { Venue } from '../types/venue'
+import type { Shift } from './Shift'
 
 export type RegistrationStatus = 'pending' | 'confirmed' | 'cancelled'
 
@@ -14,6 +15,7 @@ export interface Registration {
   notes?: string
   status_registration?: RegistrationStatus
   event?: Event
+  shift?: Shift
   venue?: Venue
   createdAt?: string
   updatedAt?: string
@@ -30,6 +32,7 @@ export interface RegistrationInput {
   rollNumber?: string
   notes?: string
   event?: string
+  shift?: string // documentId of the selected Shift
   venue?: string
   // Numeric id of the uploaded file (from Strapi's /upload endpoint),
   // linked to the `payment` media relation field on the Registration content type.

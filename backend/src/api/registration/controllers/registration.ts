@@ -23,10 +23,15 @@ export default factories.createCoreController(
         event,
         venue,
         payment,
+        shift, // <-- new field: documentId of the selected shift
       } = data;
 
       if (!event) {
         throw new ApplicationError("Event is required.");
+      }
+
+      if (!shift) {
+        throw new ApplicationError("Shift is required.");
       }
 
       // ----------------------------------------------------------------
@@ -44,54 +49,104 @@ export default factories.createCoreController(
       }
 
       // ----------------------------------------------------------------
-      // Query 2: Get all registrations for this event
+      // Query 2: Get the shift and confirm it belongs to this event
       // ----------------------------------------------------------------
-      const registrations = await strapi
+      const shiftDoc = await strapi.documents("api::shift.shift").findOne({
+        documentId: shift,
+        populate: {
+          event: true,
+        },
+      });
+
+      if (!shiftDoc) {
+        throw new NotFoundError("Shift not found.");
+      }
+
+      if (shiftDoc.event?.documentId !== event) {
+        throw new ApplicationError(
+          "Selected shift does not belong to this event."
+        );
+      }
+
+      // ----------------------------------------------------------------
+      // Query 3: Get all registrations for this SHIFT (not just event)
+      // ----------------------------------------------------------------
+      const shiftRegistrations = await strapi
         .documents("api::registration.registration")
         .findMany({
           filters: {
-            event: {
-              documentId: event,
+            shift: {
+              documentId: shift,
             },
           },
           fields: ["email", "phone", "rollNumber"],
         });
 
-      // Capacity validation
-      const capacity = eventDoc.venue?.capacity ?? null;
+      // ----------------------------------------------------------------
+      // Shift capacity validation
+      // ----------------------------------------------------------------
+      const shiftCapacity = shiftDoc.capacity ?? null;
 
       if (
-        typeof capacity === "number" &&
-        registrations.length >= capacity
+        typeof shiftCapacity === "number" &&
+        shiftRegistrations.length >= shiftCapacity
       ) {
         throw new ApplicationError(
-          "Registration is closed. This event is full."
+          "Registration is closed. This shift is full."
         );
       }
 
-      // Duplicate validation
-      for (const registration of registrations) {
-        if (registration.email === email) {
-          return ctx.badRequest(
-  "This email is already registered for this event."
-);
-        }
+      // ----------------------------------------------------------------
+      // (Optional) Overall event/venue capacity validation
+      // ----------------------------------------------------------------
+      const venueCapacity = eventDoc.venue?.capacity ?? null;
 
-        if (phone && registration.phone === phone) {
-          return ctx.badRequest(
-            "This phone number is already registered for this event."
-          );
-        }
+      if (typeof venueCapacity === "number") {
+        const eventRegistrations = await strapi
+          .documents("api::registration.registration")
+          .findMany({
+            filters: {
+              event: {
+                documentId: event,
+              },
+            },
+            fields: ["id"],
+          });
 
-        if (rollNumber && registration.rollNumber === rollNumber) {
-          return ctx.badRequest(
-            "This roll number is already registered for this event."
+        if (eventRegistrations.length >= venueCapacity) {
+          throw new ApplicationError(
+            "Registration is closed. This event is full."
           );
         }
       }
 
       // ----------------------------------------------------------------
-      // Query 3: Create registration
+      // Duplicate validation — scoped to this SHIFT
+      // (prevents someone registering twice for the same shift,
+      //  but still allows registering for a different shift of the same event)
+      // ----------------------------------------------------------------
+      for (const registration of shiftRegistrations) {
+        if (registration.email === email) {
+          return ctx.badRequest(
+            "This email is already registered for this shift."
+          );
+        }
+
+        if (phone && registration.phone === phone) {
+          return ctx.badRequest(
+            "This phone number is already registered for this shift."
+          );
+        }
+
+        if (rollNumber && registration.rollNumber === rollNumber) {
+          return ctx.badRequest(
+            "This roll number is already registered for this shift."
+          );
+        }
+      }
+
+      // ----------------------------------------------------------------
+      // Create registration
       // ----------------------------------------------------------------
       const createdRegistration = await strapi
         .documents("api::registration.registration")
@@ -106,6 +161,7 @@ export default factories.createCoreController(
             event,
             venue,
             payment,
+            shift,
           },
         });
 
@@ -113,6 +169,5 @@ export default factories.createCoreController(
         data: createdRegistration,
       };
     },
-    
   })
 );
