@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import {
@@ -18,6 +18,8 @@ import {
   UploadCloud,
   X,
   Receipt,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { EventsService } from '../../../lib/services/eventService'
 import type { Event } from '../../../types/event'
@@ -27,6 +29,8 @@ import { ShiftService } from '../../../lib/services/shiftService'
 import { UploadService } from '../../../lib/services/uploadService'
 import { SettingsService } from '../../../lib/services/settingService'
 import type { ShiftCapacityResponse } from '../../../types/Shift'
+import RegisterErrorState from './-components/RegisterErrorState'
+import RegisterSkeleton from './-components/RegisterSkeleton'
 interface RegisterLoaderData {
   event: Event
   paymentQrList: { url: string; alternativeText?: string | null }[]
@@ -100,16 +104,52 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-// Small numbered section label — the form genuinely is a 3-step sequence
+// Small numbered section label — the form genuinely is a step sequence
 // (details -> shift -> payment), so numbering here encodes real order.
 function SectionHeading({ step, children }: { step: number; children: React.ReactNode }) {
   return (
-    <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
+    <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground uppercase tracking-wide mb-2">
       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[11px] font-bold not-italic tracking-normal">
         {step}
       </span>
       {children}
     </h2>
+  )
+}
+
+// Wizard progress indicator — shows completed / current / upcoming steps
+function StepProgress({
+  steps,
+  currentIndex,
+}: {
+  steps: { key: string; label: string }[]
+  currentIndex: number
+}) {
+  if (steps.length <= 1) return null
+  return (
+    <div className="flex items-center mb-6">
+      {steps.map((s, i) => (
+        <div key={s.key} className="flex items-center flex-1 last:flex-none">
+          <div className={`flex items-center gap-2 ${i <= currentIndex ? 'text-primary' : 'text-muted-foreground'}`}>
+            <span
+              className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold border shrink-0 transition-colors ${
+                i < currentIndex
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : i === currentIndex
+                  ? 'border-primary'
+                  : 'border-border'
+              }`}
+            >
+              {i < currentIndex ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
+            </span>
+            <span className="text-xs font-medium hidden sm:inline">{s.label}</span>
+          </div>
+          {i < steps.length - 1 && (
+            <div className={`flex-1 h-px mx-2 transition-colors ${i < currentIndex ? 'bg-primary' : 'bg-border'}`} />
+          )}
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -134,9 +174,10 @@ const defaultValues: RegisterFormValues = {
   shift: '',
 }
 
+type StepKey = 'details' | 'shift' | 'payment'
+
 function RouteComponent() {
   const { event, paymentQrList, shiftCapacities } = Route.useLoaderData() as RegisterLoaderData
-  const navigate = useNavigate()
 
   const resolveUrl = (url: string) =>
     url.startsWith('http') ? url : `${import.meta.env.VITE_BACKEND_URL}${url}`
@@ -148,6 +189,7 @@ function RouteComponent() {
   // Shift is now a real relation (Event.shifts), not an embedded component.
   const shifts = event.shifts ?? []
   const hasFee = (event.fee ?? 0) > 0
+  const hasShiftAndFee = shifts.length > 0 && hasFee
 
   const past = isPastEvent(event)
 
@@ -156,6 +198,7 @@ function RouteComponent() {
     register,
     handleSubmit,
     watch,
+    trigger,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<RegisterFormValues>({ defaultValues, mode: 'onBlur' })
@@ -172,9 +215,72 @@ function RouteComponent() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const uploadedForFileRef = useRef<File | null>(null) // which File object the cached result belongs to
 
+  // ---- QR carousel state (swipe through payment QR codes on mobile) ----
+  const [qrIndex, setQrIndex] = useState(0)
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false)
+  const touchStartXRef = useRef<number | null>(null)
+
+  const goToNextQr = () => setQrIndex((i) => (i + 1) % qrImages.length)
+  const goToPrevQr = () => setQrIndex((i) => (i - 1 + qrImages.length) % qrImages.length)
+
+  const handleQrTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX
+  }
+  const handleQrTouchEnd = (e: React.TouchEvent, qrCount: number) => {
+    if (touchStartXRef.current === null) return
+    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current
+    const SWIPE_THRESHOLD = 40
+    if (deltaX > SWIPE_THRESHOLD) {
+      // swipe right -> next QR
+      setQrIndex((i) => (i + 1) % qrCount)
+    } else if (deltaX < -SWIPE_THRESHOLD) {
+      // swipe left -> previous QR
+      setQrIndex((i) => (i - 1 + qrCount) % qrCount)
+    }
+    touchStartXRef.current = null
+  }
+
   const [status, setStatus] = useState<'idle' | 'success'>('idle')
   const [submittedEmail, setSubmittedEmail] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+
+  // ---- Wizard step state ----
+  // Steps are derived from the event's shape: every event has "details";
+  // "shift" and "payment" only appear when relevant, so an event with
+  // neither is effectively a single-step form.
+  const steps: { key: StepKey; label: string }[] = [
+    { key: 'details', label: 'Your Details' },
+    ...(shifts.length > 0 ? [{ key: 'shift' as StepKey, label: 'Select Shift' }] : []),
+    ...(hasFee ? [{ key: 'payment' as StepKey, label: 'Payment' }] : []),
+  ]
+
+  const stepFieldMap: Record<StepKey, (keyof RegisterFormValues)[]> = {
+    details: ['fullName', 'email', 'phone', 'Institution', 'rollNumber', 'notes'],
+    shift: ['shift'],
+    payment: [],
+  }
+
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const currentStepKey = steps[currentStepIndex]?.key ?? 'details'
+  const isLastStep = currentStepIndex === steps.length - 1
+
+  const handleNext = async () => {
+    const fields = stepFieldMap[currentStepKey]
+    const valid = fields.length > 0 ? await trigger(fields) : true
+
+    // Payment step has no RHF-managed field — gate on the file itself
+    if (currentStepKey === 'payment' && hasFee && !file) {
+      setFileError((prev) => prev ?? 'Please upload your payment receipt.')
+      return
+    }
+
+    if (!valid) return
+    setCurrentStepIndex((i) => Math.min(i + 1, steps.length - 1))
+  }
+
+  const handleBack = () => {
+    setCurrentStepIndex((i) => Math.max(i - 1, 0))
+  }
 
   // Abort in-flight requests if the user navigates away mid-submit
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -183,6 +289,25 @@ function RouteComponent() {
       abortControllerRef.current?.abort()
     }
   }, [])
+
+  // Close the QR modal on Escape, navigate with arrow keys, and prevent
+  // background scroll while it's open
+  useEffect(() => {
+    if (!isQrModalOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsQrModalOpen(false)
+      if (e.key === 'ArrowRight') goToNextQr()
+      if (e.key === 'ArrowLeft') goToPrevQr()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = previousOverflow
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isQrModalOpen, qrImages.length])
 
   const onFileSelected = (selected: File | null) => {
     setFileError(null)
@@ -242,6 +367,14 @@ function RouteComponent() {
       return
     }
 
+    // Payment receipt is required whenever the event has a fee, even if
+    // someone somehow reaches submit without visiting the payment step.
+    if (hasFee && !file) {
+      setFormError('Please upload your payment receipt before submitting.')
+      setCurrentStepIndex(steps.findIndex((s) => s.key === 'payment'))
+      return
+    }
+
     const controller = new AbortController()
     abortControllerRef.current = controller
 
@@ -287,6 +420,7 @@ function RouteComponent() {
         setFormError('This event just reached capacity. Please check back or contact the organizers.')
       } else if (/email/i.test(message)) {
         setError('email', { message })
+        setCurrentStepIndex(0)
       } else {
         setFormError(message)
       }
@@ -348,25 +482,20 @@ function RouteComponent() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-8">
-      <Link
-        to="/events/$id"
-        params={{ id: event.documentId }}
-        onClick={(e) => {
-          e.preventDefault()
-          navigate({ to: '/events/$id', params: { id: event.documentId } })
-        }}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors mb-6"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        Back to Event
-      </Link>
+    <div className="max-w-3xl mx-auto px-3 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-8">
 
-      <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-        <div className="flex items-start justify-between gap-4 pb-6 border-b border-border">
+      <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+         <Link
+      to="/events"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 mb-4"
+    >
+      <ArrowLeft className="h-3.5 w-3.5" />
+      Back to Events
+    </Link>
+        <div className="flex items-start justify-between gap-4 pb-3 border-b border-border">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Register</h1>
-            <p className="text-sm text-muted-foreground mt-1">{event.title}</p>
+            <h1 className="text-xl font-bold text-foreground">Register</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">{event.title}</p>
           </div>
           {hasFee && (
             <div className="hidden sm:flex flex-col items-end shrink-0">
@@ -376,7 +505,7 @@ function RouteComponent() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm mt-4 pb-6 border-b border-border">
+        <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm mt-3 pb-3 border-b border-border">
           {formattedDate && (
             <div className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -393,468 +522,570 @@ function RouteComponent() {
           )}
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
-            {/* ---------------- LEFT COLUMN: personal details ---------------- */}
-            <div className="space-y-4">
-              <SectionHeading step={1}>Your Details</SectionHeading>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-5">
+          <StepProgress steps={steps} currentIndex={currentStepIndex} />
 
-              <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-foreground mb-1.5">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <UserIcon className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    id="fullName"
-                    placeholder="Your full name"
-                    aria-invalid={!!errors.fullName}
-                    aria-describedby={errors.fullName ? 'fullName-error' : undefined}
-                    className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
-                    {...register('fullName', {
-                      required: 'Please enter your full name.',
-                      minLength: { value: 2, message: 'Name looks too short.' },
-                      maxLength: { value: 100, message: 'Name is too long.' },
-                    })}
-                  />
+          {/*
+            Wizard layout: one section visible at a time, gated by validation.
+            - "details" is always present.
+            - "shift" only exists when the event has shifts.
+            - "payment" only exists when the event has a fee.
+            - If an event has neither shift nor fee, there's only one step
+              and the progress bar + Back/Next controls simply don't render.
+          */}
+          <div className="max-w-xl mx-auto lg:mx-0">
+            {/* ---------------- STEP: personal details ---------------- */}
+            {currentStepKey === 'details' && (
+              <div className="space-y-3">
+                <SectionHeading step={1}>Your Details</SectionHeading>
+
+                <div>
+                  <label htmlFor="fullName" className="block text-sm font-medium text-foreground mb-1">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <UserIcon className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      id="fullName"
+                      placeholder="Your full name"
+                      aria-invalid={!!errors.fullName}
+                      aria-describedby={errors.fullName ? 'fullName-error' : undefined}
+                      className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                      {...register('fullName', {
+                        required: 'Please enter your full name.',
+                        minLength: { value: 2, message: 'Name looks too short.' },
+                        maxLength: { value: 100, message: 'Name is too long.' },
+                      })}
+                    />
+                  </div>
+                  {errors.fullName && (
+                    <p id="fullName-error" role="alert" className="text-xs text-destructive mt-1">
+                      {errors.fullName.message}
+                    </p>
+                  )}
                 </div>
-                {errors.fullName && (
-                  <p id="fullName-error" role="alert" className="text-xs text-destructive mt-1">
-                    {errors.fullName.message}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
+                      Email
+                    </label>
+                    <div className="relative">
+                      <Mail className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        aria-invalid={!!errors.email}
+                        aria-describedby={errors.email ? 'email-error' : undefined}
+                        className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                        {...register('email', {
+                          required: 'Please enter your email.',
+                          pattern: {
+                            value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                            message: 'Enter a valid email address.',
+                          },
+                        })}
+                      />
+                    </div>
+                    {errors.email && (
+                      <p id="email-error" role="alert" className="text-xs text-destructive mt-1">
+                        {errors.email.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1">
+                      Phone
+                    </label>
+                    <div className="relative">
+                      <Phone className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        id="phone"
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder="98XXXXXXXX"
+                        aria-invalid={!!errors.phone}
+                        aria-describedby={errors.phone ? 'phone-error' : undefined}
+                        className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                        {...register('phone', {
+                          onChange: (e) => {
+                            e.target.value = e.target.value.replace(/\D/g, '')
+                          },
+                          pattern: {
+                            value: /^\d{7,10}$/,
+                            message: 'Enter a valid phone number (7-10 digits).',
+                          },
+                        })}
+                      />
+                    </div>
+                    {errors.phone && (
+                      <p id="phone-error" role="alert" className="text-xs text-destructive mt-1">
+                        {errors.phone.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="Institution" className="block text-sm font-medium text-foreground mb-1">
+                      Institution
+                    </label>
+                    <div className="relative">
+                      <Building2 className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        id="Institution"
+                        placeholder="Pulchowk Campus, IOE"
+                        className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                        {...register('Institution', { maxLength: { value: 150, message: 'Too long.' } })}
+                      />
+                    </div>
+                    {errors.Institution && (
+                      <p className="text-xs text-destructive mt-1">{errors.Institution.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="rollNumber" className="block text-sm font-medium text-foreground mb-1">
+                      Roll Number
+                    </label>
+                    <div className="relative">
+                      <Hash className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        id="rollNumber"
+                        placeholder="078BEX000"
+                        className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                        {...register('rollNumber', { maxLength: { value: 30, message: 'Too long.' } })}
+                      />
+                    </div>
+                    {errors.rollNumber && (
+                      <p className="text-xs text-destructive mt-1">{errors.rollNumber.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-1">
+                    Notes (optional)
+                  </label>
+                  <div className="relative">
+                    <FileText className="h-4 w-4 text-muted-foreground absolute left-3 top-3 pointer-events-none" />
+                    <textarea
+                      id="notes"
+                      rows={3}
+                      placeholder="Dietary restrictions, accessibility needs, questions..."
+                      className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none transition-shadow"
+                      {...register('notes', { maxLength: { value: 1000, message: 'Notes are too long (max 1000 characters).' } })}
+                    />
+                  </div>
+                  {errors.notes && <p className="text-xs text-destructive mt-1">{errors.notes.message}</p>}
+                </div>
+              </div>
+            )}
+
+            {/* ---------------- STEP: shift selection ---------------- */}
+            {currentStepKey === 'shift' && shifts.length > 0 && (
+              <div>
+                <SectionHeading step={2}>
+                  Select Shift <span className="text-red-500 normal-case">*</span>
+                </SectionHeading>
+                <div className="space-y-1.5">
+                  {shifts.map((shift) => {
+                    const shiftValue = shift.documentId
+                    const start = formatTime(shift.startTime)
+                    const end = formatTime(shift.endTime)
+                    const isSelected = selectedShift === shiftValue
+                    const shiftCap = shiftCapacities[shift.documentId]
+                    const shiftSpotsLeft = shiftCap?.spotsLeft ?? null
+                    const shiftTotal = shiftCap?.capacity
+                    const shiftFull = shiftCap?.isFull ?? false
+                    const fillRatio =
+                      shiftTotal && shiftSpotsLeft !== null
+                        ? Math.min(1, Math.max(0, 1 - shiftSpotsLeft / shiftTotal))
+                        : null
+                    return (
+                      <label
+                        key={shiftValue}
+                        htmlFor={`shift-${shiftValue}`}
+                        className={`flex items-start gap-3 rounded-lg border p-2.5 transition-colors ${
+                          shiftFull
+                            ? 'border-border bg-muted/20 opacity-60 cursor-not-allowed'
+                            : isSelected
+                            ? 'border-primary bg-primary/5 cursor-pointer ring-1 ring-primary/30'
+                            : 'border-border bg-background hover:bg-muted/40 cursor-pointer'
+                        }`}
+                      >
+                        <input
+                          id={`shift-${shiftValue}`}
+                          type="radio"
+                          value={shiftValue}
+                          disabled={shiftFull}
+                          className="mt-1 accent-blue-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                          aria-invalid={!!errors.shift}
+                          aria-describedby={errors.shift ? 'shift-error' : undefined}
+                          {...register('shift', {
+                            required: 'Please select a shift.',
+                          })}
+                        />
+                        <div className="flex-1 text-sm">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-foreground font-medium">
+                              {shift.label || 'Shift'}
+                            </p>
+                            {shiftFull && (
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-destructive bg-destructive/10 px-1.5 py-0.5 rounded-sm">
+                                Full
+                              </span>
+                            )}
+                          </div>
+                          {(start || end) && (
+                            <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Clock className="h-3 w-3 flex-shrink-0" />
+                              {start}
+                              {start && end && ' – '}
+                              {end}
+                            </p>
+                          )}
+                          {shiftSpotsLeft !== null && (
+                            <div className="mt-1.5">
+                              <p
+                                className={`flex items-center gap-1 text-xs ${
+                                  shiftFull ? 'text-destructive font-medium' : 'text-muted-foreground'
+                                }`}
+                              >
+                                <Users className="h-3 w-3 flex-shrink-0" />
+                                {shiftFull ? 'No spots left' : `${shiftSpotsLeft} spots left`}
+                              </p>
+                              {fillRatio !== null && (
+                                <div className="mt-1 h-1 w-full max-w-[160px] rounded-full bg-muted overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full ${
+                                      shiftFull ? 'bg-destructive' : 'bg-primary'
+                                    }`}
+                                    style={{ width: `${Math.round(fillRatio * 100)}%` }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
+                {errors.shift && (
+                  <p id="shift-error" role="alert" className="text-xs text-destructive mt-1.5">
+                    {errors.shift.message}
                   </p>
                 )}
               </div>
+            )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1.5">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      aria-invalid={!!errors.email}
-                      aria-describedby={errors.email ? 'email-error' : undefined}
-                      className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
-                      {...register('email', {
-                        required: 'Please enter your email.',
-                        pattern: {
-                          value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                          message: 'Enter a valid email address.',
-                        },
-                      })}
-                    />
-                  </div>
-                  {errors.email && (
-                    <p id="email-error" role="alert" className="text-xs text-destructive mt-1">
-                      {errors.email.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1.5">
-                    Phone
-                  </label>
-                  <div className="relative">
-                    <Phone className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      id="phone"
-                      type="tel"
-                      inputMode="numeric"
-                      placeholder="98XXXXXXXX"
-                      aria-invalid={!!errors.phone}
-                      aria-describedby={errors.phone ? 'phone-error' : undefined}
-                      className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
-                      {...register('phone', {
-                        onChange: (e) => {
-                          e.target.value = e.target.value.replace(/\D/g, '')
-                        },
-                        pattern: {
-                          value: /^\d{7,10}$/,
-                          message: 'Enter a valid phone number (7-10 digits).',
-                        },
-                      })}
-                    />
-                  </div>
-                  {errors.phone && (
-                    <p id="phone-error" role="alert" className="text-xs text-destructive mt-1">
-                      {errors.phone.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="Institution" className="block text-sm font-medium text-foreground mb-1.5">
-                    Institution
-                  </label>
-                  <div className="relative">
-                    <Building2 className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      id="Institution"
-                      placeholder="Pulchowk Campus, IOE"
-                      className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
-                      {...register('Institution', { maxLength: { value: 150, message: 'Too long.' } })}
-                    />
-                  </div>
-                  {errors.Institution && (
-                    <p className="text-xs text-destructive mt-1">{errors.Institution.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="rollNumber" className="block text-sm font-medium text-foreground mb-1.5">
-                    Roll Number
-                  </label>
-                  <div className="relative">
-                    <Hash className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      id="rollNumber"
-                      placeholder="078BEX000"
-                      className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
-                      {...register('rollNumber', { maxLength: { value: 30, message: 'Too long.' } })}
-                    />
-                  </div>
-                  {errors.rollNumber && (
-                    <p className="text-xs text-destructive mt-1">{errors.rollNumber.message}</p>
-                  )}
-                </div>
-              </div>
-
+            {/* ---------------- STEP: payment ---------------- */}
+            {currentStepKey === 'payment' && hasFee && (
               <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-1.5">
-                  Notes (optional)
-                </label>
-                <div className="relative">
-                  <FileText className="h-4 w-4 text-muted-foreground absolute left-3 top-3 pointer-events-none" />
-                  <textarea
-                    id="notes"
-                    rows={4}
-                    placeholder="Dietary restrictions, accessibility needs, questions..."
-                    className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none transition-shadow"
-                    {...register('notes', { maxLength: { value: 1000, message: 'Notes are too long (max 1000 characters).' } })}
-                  />
+                <SectionHeading step={shifts.length > 0 ? 3 : 2}>
+                  Payment Receipt <span className="text-red-500 normal-case">*</span>
+                </SectionHeading>
+
+                <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-1.5 mb-2.5">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Receipt className="h-3.5 w-3.5" />
+                    Event fee
+                  </span>
+                  <span className="text-sm font-semibold text-foreground">Rs. {event.fee}</span>
                 </div>
-                {errors.notes && <p className="text-xs text-destructive mt-1">{errors.notes.message}</p>}
-              </div>
-            </div>
 
-            {/* ---------------- RIGHT COLUMN: shift + payment ---------------- */}
-            <div className="space-y-6 lg:border-l lg:border-border lg:pl-10">
-              {shifts.length > 0 && (
-                <div>
-                  <SectionHeading step={2}>
-                    Select Shift <span className="text-red-500 normal-case">*</span>
-                  </SectionHeading>
-                  <div className="space-y-2">
-                    {shifts.map((shift) => {
-                      const shiftValue = shift.documentId
-                      const start = formatTime(shift.startTime)
-                      const end = formatTime(shift.endTime)
-                      const isSelected = selectedShift === shiftValue
-                      const shiftCap = shiftCapacities[shift.documentId]
-                      const shiftSpotsLeft = shiftCap?.spotsLeft ?? null
-                      const shiftTotal = shiftCap?.capacity
-                      const shiftFull = shiftCap?.isFull ?? false
-                      const fillRatio =
-                        shiftTotal && shiftSpotsLeft !== null
-                          ? Math.min(1, Math.max(0, 1 - shiftSpotsLeft / shiftTotal))
-                          : null
-                      return (
-                        <label
-                          key={shiftValue}
-                          htmlFor={`shift-${shiftValue}`}
-                          className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${
-                            shiftFull
-                              ? 'border-border bg-muted/20 opacity-60 cursor-not-allowed'
-                              : isSelected
-                              ? 'border-primary bg-primary/5 cursor-pointer ring-1 ring-primary/30'
-                              : 'border-border bg-background hover:bg-muted/40 cursor-pointer'
-                          }`}
-                        >
-                          <input
-                            id={`shift-${shiftValue}`}
-                            type="radio"
-                            value={shiftValue}
-                            disabled={shiftFull}
-                            className="mt-1 accent-blue-600 disabled:opacity-40 disabled:cursor-not-allowed"
-                            aria-invalid={!!errors.shift}
-                            aria-describedby={errors.shift ? 'shift-error' : undefined}
-                            {...register('shift', {
-                              required: 'Please select a shift.',
-                            })}
-                          />
-                          <div className="flex-1 text-sm">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-foreground font-medium">
-                                {shift.label || 'Shift'}
-                              </p>
-                              {shiftFull && (
-                                <span className="text-[10px] font-semibold uppercase tracking-wide text-destructive bg-destructive/10 px-1.5 py-0.5 rounded-sm">
-                                  Full
-                                </span>
-                              )}
-                            </div>
-                            {(start || end) && (
-                              <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
-                                <Clock className="h-3 w-3 flex-shrink-0" />
-                                {start}
-                                {start && end && ' – '}
-                                {end}
-                              </p>
-                            )}
-                            {shiftSpotsLeft !== null && (
-                              <div className="mt-1.5">
-                                <p
-                                  className={`flex items-center gap-1 text-xs ${
-                                    shiftFull ? 'text-destructive font-medium' : 'text-muted-foreground'
-                                  }`}
-                                >
-                                  <Users className="h-3 w-3 flex-shrink-0" />
-                                  {shiftFull ? 'No spots left' : `${shiftSpotsLeft} spots left`}
-                                </p>
-                                {fillRatio !== null && (
-                                  <div className="mt-1 h-1 w-full max-w-[160px] rounded-full bg-muted overflow-hidden">
-                                    <div
-                                      className={`h-full rounded-full ${
-                                        shiftFull ? 'bg-destructive' : 'bg-primary'
-                                      }`}
-                                      style={{ width: `${Math.round(fillRatio * 100)}%` }}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </label>
-                      )
-                    })}
-                  </div>
-                  {errors.shift && (
-                    <p id="shift-error" role="alert" className="text-xs text-destructive mt-1.5">
-                      {errors.shift.message}
-                    </p>
-                  )}
-                </div>
-              )}
+                <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-muted/30 p-3 mb-2.5">
+                  <div
+                    className="relative flex items-center justify-center touch-pan-y"
+                    onTouchStart={handleQrTouchStart}
+                    onTouchEnd={(e) => handleQrTouchEnd(e, qrImages.length)}
+                  >
+                    {qrImages.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={goToPrevQr}
+                        aria-label="Show previous QR code"
+                        className="absolute left-0 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white border border-border shadow-sm text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                    )}
 
-              {hasFee && (
-                <div>
-                  <SectionHeading step={shifts.length > 0 ? 3 : 2}>
-                    Payment Receipt <span className="text-red-500 normal-case">*</span>
-                  </SectionHeading>
+                    <button
+                      type="button"
+                      onClick={() => setIsQrModalOpen(true)}
+                      aria-label="View larger QR code"
+                    >
+                      <img
+                        src={qrImages[qrIndex].url}
+                        alt={qrImages[qrIndex].alt}
+                        className="h-60 w-60 rounded-md border border-border object-contain bg-white select-none cursor-pointer hover:opacity-90 transition-opacity"
+                        draggable={false}
+                      />
+                    </button>
 
-                  <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 mb-3">
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Receipt className="h-3.5 w-3.5" />
-                      Event fee
-                    </span>
-                    <span className="text-sm font-semibold text-foreground">Rs. {event.fee}</span>
+                    {qrImages.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={goToNextQr}
+                        aria-label="Show next QR code"
+                        className="absolute right-0 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white border border-border shadow-sm text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
 
-                  <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-muted/30 p-3 mb-3">
-                    <div className="flex flex-wrap justify-center gap-3">
-                      {qrImages.map((qr, i) => (
-                        <img
+                  {qrImages.length > 1 && (
+                    <div className="flex items-center gap-1.5">
+                      {qrImages.map((_, i) => (
+                        <button
                           key={i}
-                          src={qr.url}
-                          alt={qr.alt}
-                          className="h-36 w-36 rounded-md border border-border object-contain bg-white"
+                          type="button"
+                          onClick={() => setQrIndex(i)}
+                          aria-label={`Show QR code ${i + 1} of ${qrImages.length}`}
+                          className={`h-1.5 rounded-full transition-all ${
+                            i === qrIndex ? 'w-4 bg-primary' : 'w-1.5 bg-muted-foreground/30'
+                          }`}
                         />
                       ))}
                     </div>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Scan any QR above with your payment app, then upload your receipt below.
-                    </p>
-                  </div>
+                  )}
 
-                  {/* Drag-and-drop upload zone, backed by the same hidden file input */}
-                  <div
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      setIsDraggingFile(true)
-                    }}
-                    onDragLeave={() => setIsDraggingFile(false)}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      setIsDraggingFile(false)
-                      onFileSelected(e.dataTransfer.files?.[0] || null)
-                    }}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`relative flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-4 py-6 text-center cursor-pointer transition-colors ${
-                      isDraggingFile
-                        ? 'border-primary bg-primary/5'
-                        : fileError
-                        ? 'border-destructive/40 bg-destructive/5'
-                        : 'border-border bg-background hover:bg-muted/30'
-                    }`}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      id="payment"
-                      type="file"
-                      accept={ALLOWED_FILE_TYPES.join(',')}
-                      aria-describedby="payment-hint"
-                      onChange={(e) => onFileSelected(e.target.files?.[0] || null)}
-                      className="sr-only"
-                    />
-                    <UploadCloud className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm text-foreground">
-                      <span className="font-medium text-primary">Click to upload</span> or drag and drop
-                    </p>
-                    <p id="payment-hint" className="text-xs text-muted-foreground">
-                      {ALLOWED_FILE_EXT_LABEL} · up to {MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB
-                    </p>
-                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    {qrImages.length > 1
+                      ? 'Swipe or tap an arrow to see more QR codes, then upload your receipt below.'
+                      : 'Scan the QR above with your payment app, then upload your receipt below.'}
+                  </p>
+                </div>
 
-                  {file && !fileError && (
-                    <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 mt-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Paperclip className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                        <span className="text-xs text-foreground truncate">{file.name}</span>
-                        <span className="text-xs text-muted-foreground flex-shrink-0">
-                          {formatBytes(file.size)}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          clearFile()
-                        }}
-                        aria-label="Remove selected file"
-                        className="text-muted-foreground hover:text-destructive flex-shrink-0"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
+                {/* Drag-and-drop upload zone, backed by the same hidden file input */}
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    setIsDraggingFile(true)
+                  }}
+                  onDragLeave={() => setIsDraggingFile(false)}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    setIsDraggingFile(false)
+                    onFileSelected(e.dataTransfer.files?.[0] || null)
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`relative flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-4 py-4 text-center cursor-pointer transition-colors ${
+                    isDraggingFile
+                      ? 'border-primary bg-primary/5'
+                      : fileError
+                      ? 'border-destructive/40 bg-destructive/5'
+                      : 'border-border bg-background hover:bg-muted/30'
+                  }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    id="payment"
+                    type="file"
+                    accept={ALLOWED_FILE_TYPES.join(',')}
+                    aria-describedby="payment-hint"
+                    onChange={(e) => onFileSelected(e.target.files?.[0] || null)}
+                    className="sr-only"
+                  />
+                  <UploadCloud className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium text-primary">Click to upload</span> or drag and drop
+                  </p>
+                  <p id="payment-hint" className="text-xs text-muted-foreground">
+                    {ALLOWED_FILE_EXT_LABEL} · up to {MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB
+                  </p>
+                </div>
+
+                {file && !fileError && (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 mt-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Paperclip className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      <span className="text-xs text-foreground truncate">{file.name}</span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        {formatBytes(file.size)}
+                      </span>
                     </div>
-                  )}
-
-                  {fileError && (
-                    <p role="alert" className="text-xs text-destructive mt-1.5">
-                      {fileError}
-                    </p>
-                  )}
-
-                  {uploading && (
-                    <p className="text-xs text-primary mt-1.5 flex items-center gap-1.5">
-                      <span className="h-3 w-3 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-                      Uploading...
-                    </p>
-                  )}
-
-                  {uploadedFile && !uploading && (
-                    <a
-                      href={uploadedFile.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary underline mt-1.5 inline-block"
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        clearFile()
+                      }}
+                      aria-label="Remove selected file"
+                      className="text-muted-foreground hover:text-destructive flex-shrink-0"
                     >
-                      View uploaded file
-                    </a>
-                  )}
-                </div>
-              )}
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
 
-              {/* Nothing on the right (no shifts, no fee) — keep column from feeling empty */}
-              {shifts.length === 0 && !hasFee && (
-                <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                  No shift selection or payment is required for this event. Just fill in your
-                  details and confirm your registration.
-                </div>
-              )}
-            </div>
+                {fileError && (
+                  <p role="alert" className="text-xs text-destructive mt-1.5">
+                    {fileError}
+                  </p>
+                )}
+
+                {uploading && (
+                  <p className="text-xs text-primary mt-1.5 flex items-center gap-1.5">
+                    <span className="h-3 w-3 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                    Uploading...
+                  </p>
+                )}
+
+                {uploadedFile && !uploading && (
+                  <a
+                    href={uploadedFile.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary underline mt-1.5 inline-block"
+                  >
+                    View uploaded file
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Nothing beyond Details (no shifts, no fee) — keep it from feeling empty */}
+            {shifts.length === 0 && !hasFee && currentStepKey === 'details' && (
+              <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground mt-4">
+                No shift selection or payment is required for this event. Just fill in your
+                details and confirm your registration.
+              </div>
+            )}
           </div>
 
           {formError && (
-            <p role="alert" className="text-sm text-destructive mt-6 rounded-lg bg-destructive/5 border border-destructive/20 px-3 py-2">
+            <p role="alert" className="text-sm text-destructive mt-4 rounded-lg bg-destructive/5 border border-destructive/20 px-3 py-2">
               {formError}
             </p>
           )}
 
-          {/* Desktop submit — inline at the end of the form */}
-          <button
-            type="submit"
-            disabled={isSubmitting || uploading || !!fileError}
-            className="hidden lg:block w-full mt-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors"
-          >
-            {isSubmitting ? 'Submitting...' : hasFee ? `Confirm Registration · Rs. ${event.fee}` : 'Confirm Registration'}
-          </button>
+          <div className="flex items-center justify-between gap-3 mt-7 pt-5 border-t border-border">
+            <div>
+              {currentStepIndex > 0 && (
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-5 py-2.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/40 active:scale-[0.98]"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Back
+                </button>
+              )}
+            </div>
 
-          {/* Mobile submit — sticky bar so the CTA and running context (shift/fee) stay reachable
-              without the user having to scroll back up on a long form. */}
-          <div className="lg:hidden fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur px-4 py-3">
-            <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto">
-              <div className="min-w-0 text-xs text-muted-foreground truncate">
-                {selectedShiftData?.label && (
-                  <span className="text-foreground font-medium">{selectedShiftData.label}</span>
-                )}
-                {selectedShiftData?.label && hasFee && <span className="mx-1">·</span>}
-                {hasFee && <span>Rs. {event.fee}</span>}
-              </div>
+            {!isLastStep ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:ring-offset-1 active:scale-[0.98]"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            ) : (
               <button
                 type="submit"
                 disabled={isSubmitting || uploading || !!fileError}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-5 rounded-lg transition-colors flex-shrink-0"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 active:scale-[0.98]"
               >
-                {isSubmitting ? 'Submitting...' : 'Confirm'}
+                {isSubmitting && (
+                  <span className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                )}
+                {isSubmitting
+                  ? 'Submitting...'
+                  : hasFee
+                  ? `Confirm Registration · Rs. ${event.fee}`
+                  : 'Confirm Registration'}
               </button>
-            </div>
+            )}
           </div>
         </form>
       </div>
-    </div>
-  )
-}
 
-function RegisterSkeleton() {
-  return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
-      <div className="h-4 w-24 bg-muted rounded-sm mb-6" />
-      <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 space-y-4">
-        <div className="h-6 w-32 bg-muted rounded-md" />
-        <div className="h-4 w-48 bg-muted rounded-sm" />
-        <div className="h-10 bg-muted rounded-md" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-4">
-          <div className="space-y-4">
-            <div className="h-10 bg-muted rounded-lg" />
-            <div className="h-10 bg-muted rounded-lg" />
-            <div className="h-10 bg-muted rounded-lg" />
-            <div className="h-20 bg-muted rounded-lg" />
-          </div>
-          <div className="space-y-4">
-            <div className="h-16 bg-muted rounded-lg" />
-            <div className="h-40 bg-muted rounded-lg" />
+      {/* QR preview modal — lets people zoom in on the payment QR without leaving the page */}
+      {isQrModalOpen && hasFee && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setIsQrModalOpen(false)}
+        >
+          <div
+            className="relative max-w-sm w-full rounded-2xl bg-white p-4 sm:p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setIsQrModalOpen(false)}
+              aria-label="Close QR code preview"
+              className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white border border-border shadow-sm text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div
+              className="flex flex-col items-center gap-3 touch-pan-y"
+              onTouchStart={handleQrTouchStart}
+              onTouchEnd={(e) => handleQrTouchEnd(e, qrImages.length)}
+            >
+              <div className="relative flex items-center justify-center w-full">
+                {qrImages.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={goToPrevQr}
+                    aria-label="Show previous QR code"
+                    className="absolute left-0 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white border border-border shadow-sm text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                )}
+
+                <img
+                  src={qrImages[qrIndex].url}
+                  alt={qrImages[qrIndex].alt}
+                  className="w-full max-w-[320px] aspect-square rounded-lg border border-border object-contain bg-white select-none"
+                  draggable={false}
+                />
+
+                {qrImages.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={goToNextQr}
+                    aria-label="Show next QR code"
+                    className="absolute right-0 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white border border-border shadow-sm text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+
+              {qrImages.length > 1 && (
+                <div className="flex items-center gap-1.5">
+                  {qrImages.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setQrIndex(i)}
+                      aria-label={`Show QR code ${i + 1} of ${qrImages.length}`}
+                      className={`h-1.5 rounded-full transition-all ${
+                        i === qrIndex ? 'w-4 bg-primary' : 'w-1.5 bg-muted-foreground/30'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground text-center">
+                {qrImages.length > 1 ? 'Swipe, tap an arrow, or tap a dot to see more QR codes.' : qrImages[qrIndex].alt}
+              </p>
+            </div>
           </div>
         </div>
-        <div className="h-10 w-full bg-muted rounded-lg" />
-      </div>
-    </div>
-  )
-}
-
-function RegisterErrorState({ error }: { error: Error }) {
-  return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="p-5 border rounded-lg max-w-2xl mx-auto bg-destructive/10 border-destructive/30 shadow-sm">
-        <h3 className="font-bold text-xl text-destructive tracking-tight">
-          Could not load this event
-        </h3>
-        <p className="text-sm mt-1 text-foreground/80">
-          {error?.message || 'An unexpected error occurred.'}
-        </p>
-        <Link
-          to="/events"
-          className="inline-block mt-4 text-sm font-medium text-primary hover:text-primary/80 underline"
-        >
-          Back to Events
-        </Link>
-      </div>
+      )}
     </div>
   )
 }
