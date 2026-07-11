@@ -19,7 +19,7 @@ export interface StrapiMedia {
     thumbnail?: { url: string }
     small?: { url: string }
     medium?: { url: string }
-    large?: { url: string }
+    large: { url: string }
   }
   hash: string
   ext: string

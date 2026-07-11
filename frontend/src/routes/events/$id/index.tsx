@@ -70,14 +70,7 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
 
     const shifts = event.shifts?? []
 
-    // ---- Gallery ----
-    const resolveUrl = (url: string) =>
-      url.startsWith('http') ? url : `${import.meta.env.VITE_BACKEND_URL}${url}`
-
-    const galleryImages = (event.gallery ?? []).map((m) => ({
-      url: resolveUrl(m.url),
-      alt: m.alternativeText || event.title || 'Event photo',
-    }))
+    const galleryImages = (event.gallery ?? [])
 
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
     const isLightboxOpen = lightboxIndex !== null
@@ -141,31 +134,84 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
 )}
 
             {/* ---------------- Gallery ---------------- */}
-            {galleryImages.length > 0 && (
+            {(galleryImages.length > 0 || event.galleryDriveLink) && (
               <div className="mt-10">
-                <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground mb-4">
-                  <Images className="h-4.5 w-4.5 text-muted-foreground" />
-                  Gallery
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {galleryImages.map((image, index) => (
-                    <button
-                      key={image.url + index}
-                      type="button"
-                      onClick={() => setLightboxIndex(index)}
-                      aria-label={`View photo ${index + 1} of ${galleryImages.length}`}
-                      className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                    <Images className="h-4.5 w-4.5 text-muted-foreground" />
+                    Gallery
+                  </h2>
+                  {event.galleryDriveLink && (
+                    <a
+                      href={event.galleryDriveLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hidden sm:inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                     >
-                      <img
-                        src={image.url}
-                        alt={image.alt}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                    </button>
-                  ))}
+                      View all photos <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
                 </div>
+
+                {galleryImages.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {galleryImages.map((image, index) => (
+                      <button
+                        key={image.url + index}
+                        type="button"
+                        onClick={() => setLightboxIndex(index)}
+                        aria-label={`View photo ${index + 1} of ${galleryImages.length}`}
+                        className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      >
+                        <img
+                          src={image.url}
+                          alt={image.alt}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                      </button>
+                    ))}
+
+                    {/* Trailing "view more" tile, only shown once photos exist — takes people to
+                        the full Drive album for anything not previewed here. */}
+                    {event.galleryDriveLink && (
+                      <a
+                        href={event.galleryDriveLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="View full gallery on Google Drive"
+                        className="group relative flex aspect-square flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl border border-dashed border-border bg-muted/40 text-center transition-colors hover:bg-muted/70 hover:border-primary/40"
+                      >
+                        <Images className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <span className="text-xs font-medium text-foreground px-2">
+                          View full gallery
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                          on Drive <ExternalLink className="h-3 w-3" />
+                        </span>
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {/* No preview photos configured — Drive is the only way to see the gallery */}
+                {galleryImages.length === 0 && event.galleryDriveLink && (
+                  <a
+                    href={event.galleryDriveLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3.5 hover:bg-muted/50 transition-colors"
+                  >
+                    <span className="flex items-center gap-2.5 text-sm text-foreground">
+                      <Images className="h-4 w-4 text-muted-foreground" />
+                      Photos from this event are on Google Drive
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+                      Open <ExternalLink className="h-3.5 w-3.5" />
+                    </span>
+                  </a>
+                )}
               </div>
             )}
           </div>
@@ -343,7 +389,7 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
 
               <img
                 src={galleryImages[lightboxIndex].url}
-                alt={galleryImages[lightboxIndex].alt}
+                alt={galleryImages[lightboxIndex].alternativeText}
                 className="max-h-[80vh] w-auto max-w-full rounded-lg object-contain select-none"
                 draggable={false}
               />
