@@ -5,6 +5,7 @@ import { STATUS_LABELS, STATUS_BADGE_CLASSES } from '../-constant'
 import type { Project } from '../../../types/project'
 import ProjectDetailSkeleton from './-components/ProjectDetailSkeleton'
 import ProjectDetailErrorState from './-components/ProjectDetailErrorState'
+import Gallery from '../../-components/Gallery'
 
 export const Route = createFileRoute('/projects/$id/')({
   loader: async ({ params }) => {
@@ -54,7 +55,7 @@ function RouteComponent() {
         <div className="lg:col-span-2">
           <div className="rounded-2xl overflow-hidden mb-6">
             <img
-              src={project.cover_img?.formats?.medium?.url}
+              src={project.cover_img?.formats?.large?.url ? project.cover_img?.formats?.large?.url:project.cover_img?.url}
               alt={project.title || 'Project cover'}
               className="w-full h-56 sm:h-96 object-cover"
             />
@@ -73,6 +74,12 @@ function RouteComponent() {
               {project.description}
             </div>
           )}
+
+          <Gallery
+            images={project.gallery}
+            driveLink={project.galleryDriveLink}
+            title={project.title}
+          />
         </div>
 
         {/* Sidebar: project info + team */}

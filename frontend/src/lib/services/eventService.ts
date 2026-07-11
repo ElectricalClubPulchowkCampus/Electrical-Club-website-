@@ -26,6 +26,7 @@ async getEventById(id: string): Promise<Event | null> {
         
         },
       },
+      gallery:true
     },
     sort: ['order:asc'],
   })

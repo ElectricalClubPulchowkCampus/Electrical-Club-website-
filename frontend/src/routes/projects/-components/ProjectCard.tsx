@@ -22,7 +22,7 @@ const ProjectCard = ({ project }: ProjectCardProps) => {
         className="relative block h-48 w-full overflow-hidden"
       >
         <img
-          src={project.cover_img?.formats?.medium?.url}
+          src={project.cover_img?.formats?.medium?.url ? project.cover_img?.formats?.medium?.url: project.cover_img?.url }
           alt={project.title || "Project cover"}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
