@@ -25,4 +25,6 @@ export interface Project {
   updatedAt: string;
   publishedAt?: string | null;
   category?: string | null;
+  gallery?:StrapiMedia[];
+  galleryDriveLink:string;
 }

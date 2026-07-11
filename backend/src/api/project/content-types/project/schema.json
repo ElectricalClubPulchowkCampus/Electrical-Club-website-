@@ -61,6 +61,19 @@
         "Electronics & Communication",
         "Research & Innovation"
       ]
+    },
+    "gallery": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "galleryDriveLink": {
+      "type": "string"
     }
   }
 }

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-  import { ArrowLeft, MapPin, CalendarDays, User, Users, ExternalLink, Wallet, Clock } from 'lucide-react'
+  import { useEffect, useState } from 'react'
+  import { ArrowLeft, MapPin, CalendarDays, User, Users, ExternalLink, Wallet, Clock, Images, X, ChevronLeft, ChevronRight } from 'lucide-react'
   import { EventsService } from '../../../lib/services/eventService'
   import { CATEGORY_LABELS, STATUS_LABELS } from '../-constant'
   import type { Event } from '../../../types/event'
@@ -69,6 +70,41 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
 
     const shifts = event.shifts?? []
 
+    // ---- Gallery ----
+    const resolveUrl = (url: string) =>
+      url.startsWith('http') ? url : `${import.meta.env.VITE_BACKEND_URL}${url}`
+
+    const galleryImages = (event.gallery ?? []).map((m) => ({
+      url: resolveUrl(m.url),
+      alt: m.alternativeText || event.title || 'Event photo',
+    }))
+
+    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+    const isLightboxOpen = lightboxIndex !== null
+
+    const goToNextImage = () =>
+      setLightboxIndex((i) => (i === null ? null : (i + 1) % galleryImages.length))
+    const goToPrevImage = () =>
+      setLightboxIndex((i) => (i === null ? null : (i - 1 + galleryImages.length) % galleryImages.length))
+
+    // Close on Escape, navigate with arrow keys, lock background scroll while open
+    useEffect(() => {
+      if (!isLightboxOpen) return
+      const onKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setLightboxIndex(null)
+        if (e.key === 'ArrowRight') goToNextImage()
+        if (e.key === 'ArrowLeft') goToPrevImage()
+      }
+      document.addEventListener('keydown', onKeyDown)
+      const previousOverflow = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.removeEventListener('keydown', onKeyDown)
+        document.body.style.overflow = previousOverflow
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLightboxOpen, galleryImages.length])
+
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
@@ -103,6 +139,35 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
     {event.description}
   </div>
 )}
+
+            {/* ---------------- Gallery ---------------- */}
+            {galleryImages.length > 0 && (
+              <div className="mt-10">
+                <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground mb-4">
+                  <Images className="h-4.5 w-4.5 text-muted-foreground" />
+                  Gallery
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {galleryImages.map((image, index) => (
+                    <button
+                      key={image.url + index}
+                      type="button"
+                      onClick={() => setLightboxIndex(index)}
+                      aria-label={`View photo ${index + 1} of ${galleryImages.length}`}
+                      className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    >
+                      <img
+                        src={image.url}
+                        alt={image.alt}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar: event info + registration */}
@@ -245,6 +310,63 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
             </div>
           </aside>
         </div>
+
+        {/* ---------------- Gallery lightbox ---------------- */}
+        {isLightboxOpen && lightboxIndex !== null && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setLightboxIndex(null)}
+          >
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(null)}
+              aria-label="Close gallery"
+              className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div
+              className="relative flex w-full max-w-4xl items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {galleryImages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={goToPrevImage}
+                  aria-label="Previous photo"
+                  className="absolute left-0 sm:-left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+              )}
+
+              <img
+                src={galleryImages[lightboxIndex].url}
+                alt={galleryImages[lightboxIndex].alt}
+                className="max-h-[80vh] w-auto max-w-full rounded-lg object-contain select-none"
+                draggable={false}
+              />
+
+              {galleryImages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={goToNextImage}
+                  aria-label="Next photo"
+                  className="absolute right-0 sm:-right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              )}
+            </div>
+
+            {galleryImages.length > 1 && (
+              <p className="absolute bottom-6 text-xs text-white/70">
+                {lightboxIndex + 1} / {galleryImages.length}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     )
   }
