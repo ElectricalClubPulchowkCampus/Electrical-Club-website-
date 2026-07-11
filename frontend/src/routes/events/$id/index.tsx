@@ -67,7 +67,7 @@ import EventDetailErrorState from './-components/EventDetailErrorState'
           })
         : null
 
-    const shifts = event.shift ?? []
+    const shifts = event.shifts?? []
 
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
