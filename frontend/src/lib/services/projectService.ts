@@ -21,6 +21,7 @@ export const ProjectsService = {
         leader: true,
         members: true,
         cover_img: true,
+        gallery:true
       },
     })
 
