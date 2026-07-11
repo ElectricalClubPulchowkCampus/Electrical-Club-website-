@@ -33,7 +33,7 @@
     },
     "gallery": {
       "type": "media",
-      "multiple": false,
+      "multiple": true,
       "allowedTypes": [
         "images",
         "files",
@@ -99,6 +99,9 @@
       "relation": "oneToMany",
       "target": "api::shift.shift",
       "mappedBy": "event"
+    },
+    "galleryDriveLink": {
+      "type": "string"
     }
   }
 }
