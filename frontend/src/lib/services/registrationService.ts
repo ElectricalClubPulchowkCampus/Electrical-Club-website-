@@ -1,7 +1,6 @@
 import { registrationsCollection } from '../strapiClient'
 import type { RegistrationInput } from '../../types/registration'
-import type { EventCapacity } from '../../types/registration'
-import { STRAPI_URL, extractErrorMessage } from '../httphelper'
+import {  extractErrorMessage } from '../httphelper'
 
 export const RegistrationService = {
   async register(payload: RegistrationInput, opts: { signal?: AbortSignal } = {}) {
@@ -30,14 +29,5 @@ export const RegistrationService = {
     )
   },
 
-  async getEventCapacity(eventId: string, opts: { signal?: AbortSignal } = {}): Promise<EventCapacity> {
-    const res = await fetch(`${STRAPI_URL}/events/${eventId}/capacity`, { signal: opts.signal })
-
-    if (!res.ok) {
-      const message = await extractErrorMessage({ response: res }, 'Failed to fetch event capacity.')
-      throw new Error(message)
-    }
-
-    return res.json()
-  },
+  
 }
