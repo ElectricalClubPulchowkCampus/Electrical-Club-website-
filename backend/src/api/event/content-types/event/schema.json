@@ -93,6 +93,11 @@
     },
     "fee": {
       "type": "integer"
+    },
+    "shift": {
+      "type": "component",
+      "component": "shared.shift",
+      "repeatable": true
     }
   }
 }

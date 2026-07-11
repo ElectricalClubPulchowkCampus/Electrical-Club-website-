@@ -22,6 +22,20 @@ export interface SharedFaqs extends Struct.ComponentSchema {
   };
 }
 
+export interface SharedShift extends Struct.ComponentSchema {
+  collectionName: 'components_shared_shifts';
+  info: {
+    displayName: 'shift';
+  };
+  attributes: {
+    capacity: Schema.Attribute.Integer;
+    endTime: Schema.Attribute.Time;
+    label: Schema.Attribute.String;
+    startTime: Schema.Attribute.Time;
+    venue: Schema.Attribute.Relation<'oneToOne', 'api::venue.venue'>;
+  };
+}
+
 export interface SharedSocialLink extends Struct.ComponentSchema {
   collectionName: 'components_shared_social_links';
   info: {
@@ -49,6 +63,7 @@ declare module '@strapi/strapi' {
     export interface ComponentSchemas {
       'shared.club-pillars': SharedClubPillars;
       'shared.faqs': SharedFaqs;
+      'shared.shift': SharedShift;
       'shared.social-link': SharedSocialLink;
     }
   }

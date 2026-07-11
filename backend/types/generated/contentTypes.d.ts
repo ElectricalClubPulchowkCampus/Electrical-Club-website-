@@ -543,6 +543,7 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
       'oneToMany',
       'api::registration.registration'
     >;
+    shift: Schema.Attribute.Component<'shared.shift', true>;
     slug: Schema.Attribute.UID<'title'>;
     startDate: Schema.Attribute.Date;
     status_event: Schema.Attribute.Enumeration<
