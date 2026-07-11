@@ -189,7 +189,6 @@ function RouteComponent() {
   // Shift is now a real relation (Event.shifts), not an embedded component.
   const shifts = event.shifts ?? []
   const hasFee = (event.fee ?? 0) > 0
-  const hasShiftAndFee = shifts.length > 0 && hasFee
 
   const past = isPastEvent(event)
 
@@ -204,7 +203,6 @@ function RouteComponent() {
   } = useForm<RegisterFormValues>({ defaultValues, mode: 'onBlur' })
 
   const selectedShift = watch('shift')
-  const selectedShiftData = shifts.find((s) => s.documentId === selectedShift)
 
   // ---- File upload state ----
   const [file, setFile] = useState<File | null>(null)
