@@ -43,7 +43,7 @@ import type { Member } from '../../../../types/member';
 
   const ProfilePage = ({ member }: ProfilePageProps) => {
     const [imageError, setImageError] = useState(false);
-    const imageUrl = member.profile_pic?.formats?.large?.url;
+    const imageUrl = member.profile_pic?.formats?.large?.url ? member.profile_pic?.formats?.large?.url : member.profile_pic?.url;
     const showFallback = !imageUrl || imageError;
 
     return (
