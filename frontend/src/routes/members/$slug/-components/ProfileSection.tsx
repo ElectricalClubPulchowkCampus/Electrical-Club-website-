@@ -11,7 +11,10 @@ import type { Member } from '../../../../types/member';
     FaFacebook, 
     FaInstagram, 
     FaYoutube, 
-    FaTiktok 
+    FaTiktok ,
+    FaPhone,
+    FaIdCard
+
   } from "react-icons/fa6";
   import { FaQuestion } from "react-icons/fa6";
   const platformIcons: Record<string, JSX.Element> = {
@@ -71,16 +74,60 @@ import type { Member } from '../../../../types/member';
               />
             )}
             <div>
-              <h2 className="text-sm text-primary font-bold uppercase tracking-wider">
-                {member.team?.name} {member.team?.category} - 
-                {(member.role === 'President' || member.role === 'Lead') ? 'Leadership' : 'Member'}
-              </h2>
-              <h1 className="text-4xl font-extrabold mt-1 text-foreground">{member.name}</h1>
-              <p className="text-2xl font-semibold text-foreground/80">{member.role}</p>
-              <blockquote className="italic text-lg text-muted-foreground mt-4 border-l-4 border-primary pl-4">
-                {member.quote}
-              </blockquote>
-            </div>
+  <h2 className="text-sm text-primary font-bold uppercase tracking-wider">
+    {member.team?.name} {member.team?.category} - 
+    {(member.role === 'President' || member.role === 'Lead') ? 'Leadership' : 'Member'}
+  </h2>
+  <h1 className="text-4xl font-extrabold mt-1 text-foreground">{member.name}</h1>
+  <p className="text-2xl font-semibold text-foreground/80">{member.role}</p>
+  <blockquote className="italic text-lg text-muted-foreground mt-4 border-l-4 border-primary pl-4">
+    {member.quote}
+  </blockquote>
+
+  {/* Student details */}
+{(member.rollNumber || member.email || member.phone_number) && (
+  <div className="flex flex-wrap gap-x-10 gap-y-4 mt-6 pt-5 border-t border-border">
+    {member.rollNumber && (
+      <div className="flex items-start gap-2.5">
+        <FaIdCard className="size-4 text-primary mt-0.5" />
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Roll no.
+          </p>
+          <p className="text-sm font-medium text-foreground mt-0.5">{member.rollNumber}</p>
+        </div>
+      </div>
+    )}
+    {member.email && (
+      <div className="flex items-start gap-2.5">
+        <FaEnvelope className="size-4 text-primary mt-0.5" />
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Email
+          </p>
+          <a 
+            href={`mailto:${member.email}`}
+            className="text-sm font-medium text-foreground hover:text-primary transition-colors mt-0.5 block"
+          >
+            {member.email}
+          </a>
+        </div>
+      </div>
+    )}
+    {member.phone_number && (
+      <div className="flex items-start gap-2.5">
+        <FaPhone className="size-4 text-primary mt-0.5" />
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Phone
+          </p>
+          <p className="text-sm font-medium text-foreground mt-0.5">{member.phone_number}</p>
+        </div>
+      </div>
+    )}
+  </div>
+)}
+</div>
           </div>
 
           {/* Info Grid */}
