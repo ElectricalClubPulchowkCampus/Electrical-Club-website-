@@ -1,7 +1,28 @@
 import type { Core } from "@strapi/strapi";
 
+function formatTime(time?: string | Date | null): string {
+  if (!time) return "TBA";
+
+  let hours: number;
+  let minutes: number;
+
+  if (time instanceof Date) {
+    hours = time.getHours();
+    minutes = time.getMinutes();
+  } else {
+    const [h, m] = time.split(":");
+    hours = Number(h);
+    minutes = Number(m);
+  }
+
+  const date = new Date();
+  date.setHours(hours, minutes);
+  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
 export default {
   register({ strapi }: { strapi: Core.Strapi }) {
+    // ...
     strapi.documents.use(async (context, next) => {
       // Only care about Registration updates
       if (
@@ -28,8 +49,10 @@ export default {
             event: {
               populate: {
                 venue: true,
+                
               },
             },
+            shift:true
           },
         });
 
@@ -46,8 +69,10 @@ export default {
             event: {
               populate: {
                 venue: true,
+                
               },
             },
+            shift:true
           },
         });
 
@@ -66,9 +91,8 @@ export default {
             <p>Your registration for
             <strong>${updated.event.title}</strong>
             has been confirmed.</p>
-
-            <p><strong>Date:</strong> ${new Date(updated.event.startDate).toLocaleString()}</p>
-
+            <p><strong>Date:</strong> ${new Date(updated.event.startDate).toLocaleDateString()}</p>
+            <p><strong>Time:</strong> ${formatTime(updated.shift.startTime)} - ${formatTime(updated.shift.endTime)}</p>
             <p><strong>Venue:</strong> ${updated.event.venue?.name ?? "TBA"}</p>
 
             <br>
