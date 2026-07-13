@@ -1,3 +1,5 @@
+import dns from "node:dns";
+dns.setDefaultResultOrder("ipv4first");
 import type { Core } from "@strapi/strapi";
 
 function formatTime(time?: string | Date | null): string {
