@@ -42,22 +42,23 @@ const config = ({ env }: Core.Config.Shared.ConfigParams)=> ({
   // Optional: transactional email (registration confirmations, password resets)
   // Useful once your event registration flow needs to email attendees.
   email: {
-    config: {
-      provider: 'nodemailer', // or 'sendgrid', 'mailgun', etc.
-      providerOptions: {
-        host: env('SMTP_HOST'),
-        port: env.int('SMTP_PORT', 587),
-        auth: {
-          user: env('SMTP_USERNAME'),
-          pass: env('SMTP_PASSWORD'),
-        },
-      },
-      settings: {
-        defaultFrom: env('SMTP_FROM', 'no-reply@electricalclub.com'),
-        defaultReplyTo: env('SMTP_REPLY_TO', 'contact@electricalclub.com'),
+  config: {
+    provider: "nodemailer",
+    providerOptions: {
+      host: env("SMTP_HOST"),
+      port: env.int("SMTP_PORT", 587),
+      secure: env.bool("SMTP_SECURE", false), // <-- Add this
+      auth: {
+        user: env("SMTP_USERNAME"),
+        pass: env("SMTP_PASSWORD"),
       },
     },
+    settings: {
+      defaultFrom: env("SMTP_FROM"),
+      defaultReplyTo: env("SMTP_FROM"),
+    },
   },
+},
 });
 
 export default config;
