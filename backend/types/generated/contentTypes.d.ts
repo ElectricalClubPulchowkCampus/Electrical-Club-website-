@@ -469,7 +469,7 @@ export interface ApiClubSettingClubSetting extends Struct.SingleTypeSchema {
     > &
       Schema.Attribute.Private;
     mission: Schema.Attribute.String;
-    phoneNum: Schema.Attribute.Integer;
+    phoneNum: Schema.Attribute.BigInteger;
     pillars: Schema.Attribute.Component<'shared.club-pillars', true>;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
