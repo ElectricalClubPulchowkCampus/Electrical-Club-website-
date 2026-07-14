@@ -7,9 +7,9 @@ import EventDetailSkeleton from './-components/EventDetailSkeleton'
 import EventDetailErrorState from './-components/EventDetailErrorState'
 import Gallery from '../../-components/Gallery'
 
-  export const Route = createFileRoute('/events/$id/')({
+  export const Route = createFileRoute('/events/$slug/')({
     loader: async ({ params }) => {
-      return await EventsService.getEventById(params.id)
+      return await EventsService.getEventBySlug(params.slug)
     },
     component: RouteComponent,
     pendingComponent: EventDetailSkeleton,
@@ -242,8 +242,8 @@ import Gallery from '../../-components/Gallery'
                 </button>
               ) : (
                 <Link
-                  to="/events/$id/register"
-                  params={{ id: event.documentId }}
+                  to="/events/$slug/register"
+                  params={{ slug:event.slug }}
                   className="block w-full mt-4 text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors"
                 >
                   Register Now

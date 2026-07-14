@@ -13,8 +13,8 @@ const EventCard = ({ event, isPast = false }: EventCardProps) => {
     <div className="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       {/* Image */}
       <Link
-        to="/events/$id"
-        params={{ id: event.documentId }}
+        to="/events/$slug"
+        params={{ slug:event.slug }}
         className="relative block h-48 w-full overflow-hidden"
       >
         <img
@@ -47,8 +47,8 @@ const EventCard = ({ event, isPast = false }: EventCardProps) => {
         <div>
           <div className="mb-3 flex items-start justify-between gap-3">
             <Link
-              to="/events/$id"
-              params={{ id: event.documentId }}
+              to="/events/$slug"
+              params={{ slug: event.slug }}
               className="min-w-0"
             >
               <h3 className="line-clamp-2 text-xl font-bold text-foreground transition-colors group-hover:text-primary">
@@ -57,8 +57,8 @@ const EventCard = ({ event, isPast = false }: EventCardProps) => {
             </Link>
 
             <Link
-              to="/events/$id"
-              params={{ id: event.documentId }}
+              to="/events/$slug"
+              params={{ slug :   event.slug }}
               className="shrink-0 text-sm font-medium text-primary transition-colors hover:text-accent"
             >
               View →
@@ -95,8 +95,8 @@ const EventCard = ({ event, isPast = false }: EventCardProps) => {
           </button>
         ) : (
           <Link
-            to="/events/$id/register"
-            params={{ id: event.documentId }}
+            to="/events/$slug/register"
+            params={{ slug: event.slug }}
             className="mt-6 block w-full rounded-xl bg-primary py-3 text-center font-semibold text-primary-foreground transition-all duration-300 hover:bg-accent hover:shadow-lg"
           >
             Register Now
