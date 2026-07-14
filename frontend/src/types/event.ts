@@ -9,7 +9,7 @@ export type EventStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
 
 export interface Event extends StrapiMeta {
   title?: string
-  slug?: string
+  slug: string
   description?: string
   summary?: string
   coverImage?: StrapiMedia | null

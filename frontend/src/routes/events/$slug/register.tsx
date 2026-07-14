@@ -37,10 +37,10 @@ interface RegisterLoaderData {
   shiftCapacities: Record<string, ShiftCapacityResponse>
 }
 
-export const Route = createFileRoute('/events/$id/register')({
+export const Route = createFileRoute('/events/$slug/register')({
   loader: async ({ params }): Promise<RegisterLoaderData> => {
     const [event, settings] = await Promise.all([
-      EventsService.getEventById(params.id),
+      EventsService.getEventBySlug(params.slug),
       SettingsService.getSettings(),
     ])
 
@@ -433,7 +433,7 @@ function RouteComponent() {
         year: 'numeric',
       })
     : null
-
+s:
 
   if (past) {
     return (
@@ -468,8 +468,8 @@ function RouteComponent() {
           be sent to <span className="text-foreground font-medium">{submittedEmail}</span>.
         </p>
         <Link
-          to="/events/$id"
-          params={{ id: event.documentId }}
+          to="/events/$slug"
+          params={{ slug: event.slug }}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 mt-8"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
