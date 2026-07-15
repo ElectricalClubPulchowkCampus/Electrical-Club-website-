@@ -8,12 +8,12 @@
   "redirects": [
     {
       "source": "/admin",
-      "destination": "electrical-club-website.onrender.com/admin/",
+      "destination": "https://electrical-club-website.onrender.com/admin/",
       "permanent": false
     },
     {
       "source": "/admin/:path*",
-      "destination": "electrical-club-website.onrender.com/admin/:path*",
+      "destination": "https://electrical-club-website.onrender.com/admin/:path*",
       "permanent": false
     }
   ]
