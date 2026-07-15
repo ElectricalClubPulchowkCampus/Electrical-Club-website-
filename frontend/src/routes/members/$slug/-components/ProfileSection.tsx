@@ -1,206 +1,206 @@
-import type { Member } from '../../../../types/member';
-  import { FaArrowLeft } from "react-icons/fa6";
-  import type { JSX } from 'react';
-  import { useState } from 'react';
-  import { 
-    FaGithub, 
-    FaTwitter, 
-    FaLinkedin, 
-    FaGlobe, 
-    FaEnvelope, 
-    FaFacebook, 
-    FaInstagram, 
-    FaYoutube, 
-    FaTiktok ,
-    FaPhone,
-    FaIdCard
+  import type { Member } from '../../../../types/member';
+    import { FaArrowLeft } from "react-icons/fa6";
+    import type { JSX } from 'react';
+    import { useState } from 'react';
+    import { 
+      FaGithub, 
+      FaTwitter, 
+      FaLinkedin, 
+      FaGlobe, 
+      FaEnvelope, 
+      FaFacebook, 
+      FaInstagram, 
+      FaYoutube, 
+      FaTiktok ,
+      FaPhone,
+      FaIdCard
 
-  } from "react-icons/fa6";
-  import { FaQuestion } from "react-icons/fa6";
-  const platformIcons: Record<string, JSX.Element> = {
-    github: <FaGithub className="size-4" />,
-    twitter: <FaTwitter className="size-4" />,
-    linkedin: <FaLinkedin className="size-4" />,
-    website: <FaGlobe className="size-4" />,
-    email: <FaEnvelope className="size-4" />,
-    facebook: <FaFacebook className="size-4" />,
-    instagram: <FaInstagram className="size-4" />,
-    youtube: <FaYoutube className="size-4" />,
-    tiktok: <FaTiktok className="size-4" />,
-  };
+    } from "react-icons/fa6";
+    import { FaQuestion } from "react-icons/fa6";
+    const platformIcons: Record<string, JSX.Element> = {
+      github: <FaGithub className="size-4" />,
+      twitter: <FaTwitter className="size-4" />,
+      linkedin: <FaLinkedin className="size-4" />,
+      website: <FaGlobe className="size-4" />,
+      email: <FaEnvelope className="size-4" />,
+      facebook: <FaFacebook className="size-4" />,
+      instagram: <FaInstagram className="size-4" />,
+      youtube: <FaYoutube className="size-4" />,
+      tiktok: <FaTiktok className="size-4" />,
+    };
 
-  const getInitials = (name: string) => {
-    return name
-      .trim()
-      .split(/\s+/)
-      .map((part) => part[0])
-      .filter(Boolean)
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
-  };
+    const getInitials = (name: string) => {
+      return name
+        .trim()
+        .split(/\s+/)
+        .map((part) => part[0])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+    };
 
-  interface ProfilePageProps {
-    member: Member;
-  }
+    interface ProfilePageProps {
+      member: Member;
+    }
 
-  const ProfilePage = ({ member }: ProfilePageProps) => {
-    const [imageError, setImageError] = useState(false);
-    const imageUrl = member.profile_pic?.formats?.large?.url ? member.profile_pic?.formats?.large?.url : member.profile_pic?.url;
-    const showFallback = !imageUrl || imageError;
+    const ProfilePage = ({ member }: ProfilePageProps) => {
+      const [imageError, setImageError] = useState(false);
+      const imageUrl = member.profile_pic?.formats?.large?.url ? member.profile_pic?.formats?.large?.url : member.profile_pic?.url;
+      const showFallback = !imageUrl || imageError;
 
-    return (
-        <div>
-          {/* Hero Section */}  
-          <button 
-  type="button" // Always good practice to explicitly state type="button"
-  onClick={() => window.history.back()}
-  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-4"
->
-  <FaArrowLeft className="size-3" />
-  Back
-</button>
-          <div className="flex flex-col md:flex-row gap-8 items-start mb-12 mt-6">
-            {showFallback ? (
-              <div className="w-64 h-80 flex items-center justify-center bg-secondary border border-border rounded-[--radius-lg] flex-shrink-0 text-5xl font-bold text-primary select-none">
-                {getInitials(member.name)}
-              </div>
-            ) : (
-              <img 
-                src={imageUrl} 
-                alt={member.name}
-                onError={() => setImageError(true)}
-                className="w-64 h-80 object-cover bg-muted rounded-[--radius-lg] flex-shrink-0"
-              />
-            )}
-            <div>
-  <h2 className="text-sm text-primary font-bold uppercase tracking-wider">
-    {member.team?.name} {member.team?.category} - 
-    {(member.role === 'President' || member.role === 'Lead') ? 'Leadership' : 'Member'}
-  </h2>
-  <h1 className="text-4xl font-extrabold mt-1 text-foreground">{member.name}</h1>
-  <p className="text-2xl font-semibold text-foreground/80">{member.role}</p>
-  <blockquote className="italic text-lg text-muted-foreground mt-4 border-l-4 border-primary pl-4">
-    {member.quote}
-  </blockquote>
+      return (
+          <div>
+            {/* Hero Section */}  
+            <button 
+    type="button" // Always good practice to explicitly state type="button"
+    onClick={() => window.history.back()}
+    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-4"
+  >
+    <FaArrowLeft className="size-3" />
+    Back
+  </button>
+            <div className="flex flex-col md:flex-row gap-8 items-start mb-12 mt-6">
+              {showFallback ? (
+                <div className="w-64 h-80 flex items-center justify-center bg-secondary border border-border rounded-[--radius-lg] flex-shrink-0 text-5xl font-bold text-primary select-none">
+                  {getInitials(member.name)}
+                </div>
+              ) : (
+                <img 
+                  src={imageUrl} 
+                  alt={member.name}
+                  onError={() => setImageError(true)}
+                  className="w-64 h-80 object-cover bg-muted rounded-[--radius-lg] flex-shrink-0"
+                />
+              )}
+              <div>
+    <h2 className="text-sm text-primary font-bold uppercase tracking-wider">
+      {member.team?.name} {member.team?.category} - 
+      {(member.role === 'President' || member.role === 'Lead') ? 'Leadership' : 'Member'}
+    </h2>
+    <h1 className="text-4xl font-extrabold mt-1 text-foreground">{member.name}</h1>
+    <p className="text-2xl font-semibold text-foreground/80">{member.role}</p>
+    <blockquote className="italic text-lg text-muted-foreground mt-4 border-l-4 border-primary pl-4">
+      {member.quote}
+    </blockquote>
 
-  {/* Student details */}
-{(member.rollNumber || member.email || member.phone_number) && (
-  <div className="flex flex-wrap gap-x-10 gap-y-4 mt-6 pt-5 border-t border-border">
-    {member.rollNumber && (
-      <div className="flex items-start gap-2.5">
-        <FaIdCard className="size-4 text-primary mt-0.5" />
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Roll no.
-          </p>
-          <p className="text-sm font-medium text-foreground mt-0.5">{member.rollNumber}</p>
-        </div>
-      </div>
-    )}
-    {member.email && (
-      <div className="flex items-start gap-2.5">
-        <FaEnvelope className="size-4 text-primary mt-0.5" />
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Email
-          </p>
-          <a 
-            href={`mailto:${member.email}`}
-            className="text-sm font-medium text-foreground hover:text-primary transition-colors mt-0.5 block"
-          >
-            {member.email}
-          </a>
-        </div>
-      </div>
-    )}
-    {member.phone_number && (
-      <div className="flex items-start gap-2.5">
-        <FaPhone className="size-4 text-primary mt-0.5" />
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Phone
-          </p>
-          <p className="text-sm font-medium text-foreground mt-0.5">{member.phone_number}</p>
-        </div>
-      </div>
-    )}
-  </div>
-)}
-</div>
+    {/* Student details */}
+  {(member.rollNumber || member.email || member.phone_number) && (
+    <div className="flex flex-wrap gap-x-10 gap-y-4 mt-6 pt-5 border-t border-border">
+      {member.rollNumber && (
+        <div className="flex items-start gap-2.5">
+          <FaIdCard className="size-4 text-primary mt-0.5" />
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Roll no.
+            </p>
+            <p className="text-sm font-medium text-foreground mt-0.5">{member.rollNumber}</p>
           </div>
-
-          {/* Info Grid */}
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="md:col-span-2 bg-card p-6 rounded-[--radius-lg] border border-border">
-              <h3 className="font-bold text-lg mb-4 text-foreground">About & Interests</h3>
-              <p className="text-muted-foreground mb-6">{member.about}</p>
-
-              <div className="grid grid-cols-2 gap-4">
-                {member.primaryFocus && (
-                  <div className="p-4 border border-border rounded-[--radius-md]">
-                    <h4 className="text-primary font-bold">Primary Focus</h4>
-                    <p className="text-sm text-foreground">{member.primaryFocus}</p>
-                  </div>
-                )}
-                {member.clubContribution && (
-                  <div className="p-4 border border-border rounded-[--radius-md]">
-                    <h4 className="text-primary font-bold">Club Contribution</h4>
-                    <p className="text-sm text-foreground">{member.clubContribution}</p>
-                  </div>
-                )}
-              </div>
+        </div>
+      )}
+      {member.email && (
+        <div className="flex items-start gap-2.5">
+          <FaEnvelope className="size-4 text-primary mt-0.5" />
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Email
+            </p>
+            <a 
+              href={`mailto:${member.email}`}
+              className="text-sm font-medium text-foreground hover:text-primary transition-colors mt-0.5 block"
+            >
+              {member.email}
+            </a>
+          </div>
+        </div>
+      )}
+      {member.phone_number && (
+        <div className="flex items-start gap-2.5">
+          <FaPhone className="size-4 text-primary mt-0.5" />
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Phone
+            </p>
+            <p className="text-sm font-medium text-foreground mt-0.5">{member.phone_number}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )}
+  </div>
             </div>
-                
-            {/* Social Links Section */}
-            <div className="space-y-6">
-              <div className="bg-card p-6 rounded-[--radius-lg] border border-border">
-                <h3 className="font-bold mb-4 text-foreground">Connect Digitally</h3>
-                <div className="space-y-2">
-                  {member.socialLinks?.map((link) => {
-                    const icon = platformIcons[link.platform.toLowerCase()] || <FaQuestion className="size-4" />;
-                    
-                    return (
-                      <a 
-                        key={link.id}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-between p-2 hover:bg-secondary cursor-pointer border-b border-border text-sm text-foreground transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
-                          {icon}
-                          <span className="capitalize">{link.platform}</span>
-                        </div>
-                        <span className="opacity-50">→</span>
-                      </a>
-                    );
-                  })}
+
+            {/* Info Grid */}
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="md:col-span-2 bg-card p-6 rounded-[--radius-lg] border border-border">
+                <h3 className="font-bold text-lg mb-4 text-foreground">About & Interests</h3>
+                <p className="text-muted-foreground mb-6">{member.about}</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {member.primaryFocus && (
+                    <div className="p-4 border border-border rounded-[--radius-md]">
+                      <h4 className="text-primary font-bold">Primary Focus</h4>
+                      <p className="text-sm text-foreground">{member.primaryFocus}</p>
+                    </div>
+                  )}
+                  {member.clubContribution && (
+                    <div className="p-4 border border-border rounded-[--radius-md]">
+                      <h4 className="text-primary font-bold">Club Contribution</h4>
+                      <p className="text-sm text-foreground">{member.clubContribution}</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              
-              <div className="bg-primary text-primary-foreground p-6 rounded-[--radius-lg]">
-    <h3 className="text-xs uppercase opacity-80 mb-2">Current Status</h3>
+                  
+              {/* Social Links Section */}
+              <div className="space-y-6">
+                <div className="bg-card p-6 rounded-[--radius-lg] border border-border">
+                  <h3 className="font-bold mb-4 text-foreground">Connect Digitally</h3>
+                  <div className="space-y-2">
+                    {member.socialLinks?.map((link) => {
+                      const icon = platformIcons[link.platform.toLowerCase()] || <FaQuestion className="size-4" />;
+                      
+                      return (
+                        <a 
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between p-2 hover:bg-secondary cursor-pointer border-b border-border text-sm text-foreground transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            {icon}
+                            <span className="capitalize">{link.platform}</span>
+                          </div>
+                          <span className="opacity-50">→</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                <div className="bg-primary text-primary-foreground p-6 rounded-[--radius-lg]">
+      <h3 className="text-xs uppercase opacity-80 mb-2">Current Status</h3>
 
-            {member.projects
-              ?.filter((project) => project.status_project === "in-progress")
-              .map((project) => (
-                <p key={project.documentId} className="font-bold">
-                  ● {project.title}{" "}
-                  <span className="font-normal opacity-80">
-                    ({project.leader?.documentId === member.documentId ? "Leader" : "Member"})
-                  </span>
-                </p>
-              ))}
+              {member.projects
+                ?.filter((project) => project.status_project === "in-progress")
+                .map((project) => (
+                  <p key={project.documentId} className="font-bold">
+                    ● {project.title}{" "}
+                    <span className="font-normal opacity-80">
+                      ({project.leader?.documentId === member.documentId ? "Leader" : "Member"})
+                    </span>
+                  </p>
+                ))}
 
-            {member.projects?.filter((project) => project.status_project === "in-progress").length === 0 && (
-              <p className="opacity-80">No active projects.</p>
-            )}
-  </div>
+              {member.projects?.filter((project) => project.status_project === "in-progress").length === 0 && (
+                <p className="opacity-80">No active projects.</p>
+              )}
+    </div>
+              </div>
             </div>
           </div>
-        </div>
-    );
-  };
+      );
+    };
 
-  export default ProfilePage;
+    export default ProfilePage;
