@@ -595,7 +595,7 @@ export interface ApiMemberMember extends Struct.CollectionTypeSchema {
     phone_number: Schema.Attribute.BigInteger &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'980000000'>;
-    primaryFocus: Schema.Attribute.String;
+    primaryFocus: Schema.Attribute.Text;
     profile_pic: Schema.Attribute.Media<'images'>;
     projects: Schema.Attribute.Relation<'manyToMany', 'api::project.project'>;
     publishedAt: Schema.Attribute.DateTime;

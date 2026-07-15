@@ -4,5 +4,17 @@
       "source": "/((?!assets|.*\\..*).*)",
       "destination": "/index.html"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "electrical-club-website.onrender.com/admin/",
+      "permanent": false
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "electrical-club-website.onrender.com/admin/:path*",
+      "permanent": false
+    }
   ]
 }
