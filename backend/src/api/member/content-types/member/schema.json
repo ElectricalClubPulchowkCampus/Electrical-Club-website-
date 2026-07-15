@@ -58,7 +58,7 @@
       "type": "text"
     },
     "primaryFocus": {
-      "type": "string"
+      "type": "text"
     },
     "clubContribution": {
       "type": "text"
