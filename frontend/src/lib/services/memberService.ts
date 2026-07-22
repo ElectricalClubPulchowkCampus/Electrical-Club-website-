@@ -28,7 +28,9 @@ export const MemberService = {
         team: true,
         socialLinks: true,
         
-      }
+      },
+      pagination: { pageSize: 100, page: 1 },
+
 
     })
     
